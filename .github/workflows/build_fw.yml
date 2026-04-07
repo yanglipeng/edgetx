@@ -27,26 +27,9 @@ jobs:
     strategy:
       matrix:
         target:
-          - x9dp2019;x9e
-          - tx15
           - tx16s
           - tx16smk3
-          - nv14
-          - el18
-          - pl18
-          - pl18ev
-          - t12max;t14
-          - t15
-          - t16
-          - t18
-          - t20;t20v2
-          - x10
-          - x12s
-          - mt12;gx12
-          - nb4p
-          - st16
           - t15pro
-          - pa01
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -75,22 +58,10 @@ jobs:
     strategy:
       matrix:
         target:
-          - nv14;el18
-          - pl18;pl18ev
-          - pl18u;pa01
-          - t15;t16
-          - t14;t18;mt12
-          - zorro;pocket;commando8
-          - tprov2;tpros;bumblebee
-          - mt12;gx12;t20;t20v2
-          - t12max;tx12mk2;boxer
-          - tx15;tx16s
+          - tx16s
           - x12s;f16
-          - v12;v14;v16
-          - x10;x10express
-          - x7access;x9dp2019;x9e;x9e-hall
-          - nb4p;st16
-          - tx16smk3;t14;t15pro
+          - v16
+          - tx16smk3
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
