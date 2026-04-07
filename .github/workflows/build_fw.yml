@@ -28,6 +28,7 @@ jobs:
       matrix:
         target:
           - tx16s
+          - v16
           - tx16smk3
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
