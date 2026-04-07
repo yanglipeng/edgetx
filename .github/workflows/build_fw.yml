@@ -29,7 +29,6 @@ jobs:
         target:
           - tx16s
           - tx16smk3
-          - t15pro
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -59,7 +58,6 @@ jobs:
       matrix:
         target:
           - tx16s
-          - x12s;f16
           - v16
           - tx16smk3
     container:
