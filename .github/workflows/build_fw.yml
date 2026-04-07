@@ -1,35 +1,26 @@
 ---
-name: Run tests and package firmware
+name: Build and deploy nightly release
 on:
-  push:
-    branches:
-      - 'main'
-      - '[0-9]+.[0-9]+'
-    tags:
-      - v*
-    paths: &trigger-paths
-      - '.github/workflows/build_fw.yml'
-      - 'cmake/**'
-      - 'radio/**'
-      - 'tools/build-gh.sh'
-      - '.gitmodules'
-      - 'CMakeLists.txt'
-  pull_request:
-    paths: *trigger-paths
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: 'nightly'
+  cancel-in-progress: true
 
 jobs:
-  test:
-    name: Run tests
+  build:
+    name: Build firmware
     runs-on: ubuntu-latest
-    if: |
-      github.event_name != 'pull_request' ||
-      !contains(github.event.pull_request.labels.*.name, 'ci: skip-fw')
     strategy:
       matrix:
         target:
           - tx16s
           - v16
           - tx16smk3
+          - v16
+          - pa01
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -59,8 +50,8 @@ jobs:
       matrix:
         target:
           - tx16s
-          - v16
           - tx16smk3
+          - v16
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -74,6 +65,7 @@ jobs:
       - name: Build ${{ matrix.target }}
         env:
           FLAVOR: ${{ matrix.target }}
+          TRANSLATIONS: CN
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: |
           echo "Running firmware build"
