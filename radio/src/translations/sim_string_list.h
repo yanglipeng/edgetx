@@ -544,6 +544,7 @@
 #define STR_EXTERNALRF currentLangStrings->STR_EXTERNALRF
 #define STR_FADEIN currentLangStrings->STR_FADEIN
 #define STR_FADEOUT currentLangStrings->STR_FADEOUT
+#define STR_FADESPEED currentLangStrings->STR_FADESPEED
 #define STR_FAILSAFE currentLangStrings->STR_FAILSAFE
 #define STR_FAILSAFESET currentLangStrings->STR_FAILSAFESET
 #define STR_FAILSAFEWARN currentLangStrings->STR_FAILSAFEWARN

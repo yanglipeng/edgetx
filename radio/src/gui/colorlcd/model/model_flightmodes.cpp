@@ -179,6 +179,12 @@ class FlightModeEdit : public Page
     new NumberEdit(line, rect_t{}, 0, DELAY_MAX, GET_DEFAULT(p_fm->fadeOut),
                    SET_VALUE(p_fm->fadeOut, newValue), PREC1);
 
+    // Fade speed (smooth transition)
+    line = body->newLine(grid);
+    new StaticText(line, rect_t{}, STR_FADESPEED);
+    new NumberEdit(line, rect_t{}, 0, DELAY_MAX, GET_DEFAULT(p_fm->fadeSpeed),
+                   SET_VALUE(p_fm->fadeSpeed, newValue), PREC1);
+
     // Trims
     line = body->newLine(grid);
     new StaticText(line, rect_t{}, STR_TRIMS);

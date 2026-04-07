@@ -1134,10 +1134,21 @@ void evalFlightModeMixes(uint8_t mode, uint8_t tick10ms)
 
 
 #define MAX_ACT 0xffff
-uint8_t lastFlightMode = 255; // TODO reinit everything here when the model changes, no???
+uint8_t lastFlightMode = 255;
 
 tmr10ms_t flightModeTransitionTime;
 uint8_t   flightModeTransitionLast = 255;
+
+struct SmoothTransition {
+  uint8_t  active;
+  uint8_t  fromMode;
+  uint8_t  toMode;
+  tmr10ms_t startTime;
+  uint16_t duration;
+  int32_t  baseValue[MAX_OUTPUT_CHANNELS];
+};
+
+static SmoothTransition smoothTrans = {0};
 
 void evalMixes(uint8_t tick10ms)
 {
@@ -1148,7 +1159,6 @@ void evalMixes(uint8_t tick10ms)
   static uint16_t flightModesFade = 0;
 
 #if defined(RADIO_GX12)
-  // see #6159
   _poll_switches();
 #endif
 
@@ -1159,20 +1169,43 @@ void evalMixes(uint8_t tick10ms)
 
     if (lastFlightMode == 255) {
       fp_act[fm] = MAX_ACT;
+      smoothTrans.active = 0;
     }
     else {
+      uint8_t fadeSpeed = g_model.flightModeData[fm].fadeSpeed;
       uint8_t fadeTime = max(g_model.flightModeData[lastFlightMode].fadeOut, g_model.flightModeData[fm].fadeIn);
       uint16_t transitionMask = (0x01u << lastFlightMode) + (0x01u << fm);
-      if (fadeTime) {
-        flightModesFade |= transitionMask;
-        delta = (MAX_ACT / 10) / fadeTime;
-      }
-      else {
+
+      if (fadeSpeed > 0 && fadeTime > 0) {
+        smoothTrans.active = 1;
+        smoothTrans.fromMode = lastFlightMode;
+        smoothTrans.toMode = fm;
+        smoothTrans.startTime = get_tmr10ms();
+        smoothTrans.duration = fadeTime * 100;
+
+        for (int i = 0; i < MAX_OUTPUT_CHANNELS; i++) {
+          smoothTrans.baseValue[i] = chans[i];
+        }
+
+        mixerCurrentFlightMode = fm;
+        evalFlightModeMixes(e_perout_mode_normal, tick10ms);
+
         flightModesFade &= ~transitionMask;
         fp_act[lastFlightMode] = 0;
         fp_act[fm] = MAX_ACT;
       }
-      logicalSwitchesCopyState(lastFlightMode, fm); // push last logical switches state from old to new flight mode
+      else if (fadeTime) {
+        smoothTrans.active = 0;
+        flightModesFade |= transitionMask;
+        delta = (MAX_ACT / 10) / fadeTime;
+      }
+      else {
+        smoothTrans.active = 0;
+        flightModesFade &= ~transitionMask;
+        fp_act[lastFlightMode] = 0;
+        fp_act[fm] = MAX_ACT;
+      }
+      logicalSwitchesCopyState(lastFlightMode, fm);
     }
     lastFlightMode = fm;
   }
@@ -1189,7 +1222,27 @@ void evalMixes(uint8_t tick10ms)
   }
 
   int32_t weight = 0;
-  if (flightModesFade) {
+  if (smoothTrans.active) {
+    mixerCurrentFlightMode = smoothTrans.toMode;
+    evalFlightModeMixes(e_perout_mode_normal, tick10ms);
+
+    tmr10ms_t elapsed = get_tmr10ms() - smoothTrans.startTime;
+    uint32_t progress;
+    if (elapsed >= smoothTrans.duration) {
+      progress = 65535;
+      smoothTrans.active = 0;
+    } else {
+      progress = (elapsed * 65535) / smoothTrans.duration;
+    }
+
+    for (uint8_t i = 0; i < MAX_OUTPUT_CHANNELS; i++) {
+      int32_t newValue = chans[i];
+      int32_t base = smoothTrans.baseValue[i];
+      int32_t diff = newValue - base;
+      chans[i] = base + (int32_t)((int64_t)diff * progress >> 16);
+    }
+  }
+  else if (flightModesFade) {
     memclear(sum_chans512, sizeof(sum_chans512));
     for (uint8_t p=0; p<MAX_FLIGHT_MODES; p++) {
       if (flightModesFade & (0x01 << p)) {
