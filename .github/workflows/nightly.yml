@@ -16,13 +16,9 @@ jobs:
     strategy:
       matrix:
         target:
-          - pa01
-          - t15;t16;t18
           - tx16s
           - tx16smk3
           - v16
-          - tx15
-          - t15pro
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
