@@ -97,27 +97,27 @@ static inline void check_struct()
 #elif defined(PCBX9E)
   CHKSIZE(ModelData, 6771);
 #elif defined(PCBX9D) || defined(PCBX9DP)
-  CHKSIZE(ModelData, 6770);
+  CHKSIZE(ModelData, 6779);
 #elif defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE) || defined(RADIO_T14) || defined(RADIO_T12MAX)
-  CHKSIZE(ModelData, 6329);
+  CHKSIZE(ModelData, 6338);
 #elif defined(PCBPL18)
   #if defined(RADIO_NB4P) || defined(RADIO_NV14_FAMILY)
-    CHKSIZE(ModelData, 6875);
+    CHKSIZE(ModelData, 6884);
   #else
-    CHKSIZE(ModelData, 6877);
+    CHKSIZE(ModelData, 6886);
   #endif
 #elif defined(PCBST16) || defined(RADIO_T15PRO) || defined(RADIO_TX15)
-  CHKSIZE(ModelData, 7641);
+  CHKSIZE(ModelData, 7650);
 #elif defined(PCBPA01)
-  CHKSIZE(ModelData, 7582);
+  CHKSIZE(ModelData, 7591);
 #elif defined(RADIO_T15)
-  CHKSIZE(ModelData, 6867);
+  CHKSIZE(ModelData, 6876);
 #elif defined(RADIO_TX16SMK3)
-  CHKSIZE(ModelData, 7642);
+  CHKSIZE(ModelData, 7651);
 #elif defined(RADIO_H7RS)
   // CHKSIZE()
 #elif defined(PCBHORUS)
-  CHKSIZE(ModelData, 6841);
+  CHKSIZE(ModelData, 6850);
 #else
   #error CHKSIZE not set up
 #endif
