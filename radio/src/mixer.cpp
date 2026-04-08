@@ -1172,11 +1172,11 @@ void evalMixes(uint8_t tick10ms)
       smoothTrans.active = 0;
     }
     else {
-      uint8_t fadeSpeed = g_model.flightModeData[fm].fadeSpeed;
+      uint8_t fadeSmooth = g_model.flightModeData[fm].fadeSmooth;
       uint8_t fadeTime = max(g_model.flightModeData[lastFlightMode].fadeOut, g_model.flightModeData[fm].fadeIn);
       uint16_t transitionMask = (0x01u << lastFlightMode) + (0x01u << fm);
 
-      if (fadeSpeed > 0 && fadeTime > 0) {
+      if (fadeSmooth && fadeTime > 0) {
         smoothTrans.active = 1;
         smoothTrans.fromMode = lastFlightMode;
         smoothTrans.toMode = fm;

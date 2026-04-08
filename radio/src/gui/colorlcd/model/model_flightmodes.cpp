@@ -30,6 +30,7 @@
 #include "page.h"
 #include "switchchoice.h"
 #include "textedit.h"
+#include "toggleswitch.h"
 
 #define SET_DIRTY() storageDirty(EE_MODEL)
 
@@ -179,11 +180,11 @@ class FlightModeEdit : public Page
     new NumberEdit(line, rect_t{}, 0, DELAY_MAX, GET_DEFAULT(p_fm->fadeOut),
                    SET_VALUE(p_fm->fadeOut, newValue), PREC1);
 
-    // Fade speed (smooth transition)
+    // Fade smooth (smooth transition toggle)
     line = body->newLine(grid);
-    new StaticText(line, rect_t{}, STR_FADESPEED);
-    new NumberEdit(line, rect_t{}, 0, DELAY_MAX, GET_DEFAULT(p_fm->fadeSpeed),
-                   SET_VALUE(p_fm->fadeSpeed, newValue), PREC1);
+    new StaticText(line, rect_t{}, STR_FADESMOOTH);
+    new ToggleSwitch(line, rect_t{}, GET_DEFAULT(p_fm->fadeSmooth),
+                     SET_VALUE(p_fm->fadeSmooth, newValue));
 
     // Trims
     line = body->newLine(grid);
