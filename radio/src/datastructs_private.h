@@ -241,12 +241,9 @@ PACK(struct FlightModeData {
   // swtch of phase[0] is not used
   int16_t swtch:10 ENUM(SwitchSources) CUST(r_swtchSrc,w_swtchSrc);
   int16_t spare:6 SKIP;
-  PACK(struct {
-    uint8_t fadeIn;
-    uint8_t fadeOut;
-    uint8_t fadeSmooth:1;   // 0=weighted fade, 1=smooth transition
-    uint8_t fadePad:7;      // padding
-  });
+  uint8_t fadeIn;
+  uint8_t fadeOut;
+  uint8_t fadeSmooth;       // 0=weighted fade, 1=smooth transition
   gvar_t gvars[MAX_GVARS] FUNC(gvar_is_active);
 });
 
