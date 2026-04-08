@@ -32,7 +32,7 @@ jobs:
       - name: Build firmware ${{ matrix.target }}
         env:
           FLAVOR: ${{ matrix.target }}
-          TRANSLATIONS: CN
+          EXTRA_OPTIONS: "-DTRANSLATIONS=CN"
           EDGETX_VERSION_SUFFIX: nightly
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: ./tools/build-gh.sh
