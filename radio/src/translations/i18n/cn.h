@@ -494,7 +494,7 @@
 #define TR_TRIMS                       "微调"
 #define TR_FADEIN                      "渐入"
 #define TR_FADEOUT                     "渐出"
-#define TR_FADESPEED                   "过渡速度"
+#define TR_FADESPEED                   "过渡"
 #define TR_DEFAULT                     "(默认)"
 #define TR_CHECKTRIMS                  TR_BW_COL("\006检查\012微调", "检查当前飞行模式微调")
 #define TR_SWASHTYPE                   "斜盘类型"
