@@ -16,29 +16,9 @@ jobs:
     strategy:
       matrix:
         target:
-          - nv14;el18
-          - pl18;pl18ev;pl18u
-          - pa01
-          - t12max
-          - t15;t16;t18
-          - zorro;pocket;mt12;commando8
-          - tprov2;tpros;bumblebee
-          - t20;t20v2;t14
-          - tx12mk2;boxer;gx12
           - tx16s
           - tx16smk3
-          - f16
           - v16
-          - x10;x10express
-          - x12s
-          - x7access
-          - x9dp2019
-          - x9e;x9e-hall
-          - mt12
-          - nb4p
-          - st16
-          - tx15
-          - t15pro
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -52,6 +32,7 @@ jobs:
       - name: Build firmware ${{ matrix.target }}
         env:
           FLAVOR: ${{ matrix.target }}
+          EXTRA_OPTIONS: "-DTRANSLATIONS=CN"
           EDGETX_VERSION_SUFFIX: nightly
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: ./tools/build-gh.sh
@@ -78,7 +59,7 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Need full history for changelog
+          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -91,38 +72,21 @@ jobs:
         run: |
           echo "release_filename=edgetx-firmware-nightly-${GITHUB_SHA::8}.zip" >> $GITHUB_ENV
           echo "build_date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
-          echo "old_nightly_sha=$(git rev-parse nightly)" >> $GITHUB_ENV
 
       - name: Zip release file
         uses: montudor/action-zip@v1
         with:
           args: zip -qq -j -r ${{ env.release_filename }} ./edgetx-firmware-nightly
 
-      - name: Generate changelog
-        id: changelog
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --verbose --strip all nightly..HEAD
-        env:
-          OUTPUT: CHANGELOG.md
-
       - name: Update nightly tag
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git tag -f nightly
-          git push -f origin nightly
-
-      - name: Delete previous nightly release
-        run: |
-          # Delete the existing nightly release to avoid accumulating assets
-          gh release delete nightly --yes || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push -f origin nightly || true
 
       - name: Deploy nightly release
-        uses: softprops/action-gh-release@v2 #softprops/action-gh-release/pull/670 or v3 to clear nodejs log warning
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: nightly
           prerelease: true
@@ -136,13 +100,6 @@ jobs:
             This is an automated nightly build of EdgeTX firmware. These builds are for testing purposes and may contain bugs. Please be sure to report any issues you encounter!
 
             ### Installation
-            Download `${{ env.release_filename }}` and extract the firmware file for your radio model, or use [EdgeTX Buddy](https://buddy.edgetx.org/#/flash?version=nightly&source=releases&filters=includePrereleases) with the "Include pre-releases" Filter option enabled so you can select the "Nightly" version.
-
-            ## Changes since last nightly build
-
-            ${{ steps.changelog.outputs.content }}
-
-            ---
-            **Full Diff:** https://github.com/${{ github.repository }}/compare/${{ env.old_nightly_sha }}...${{ github.sha }}
+            Download and extract the firmware file for your radio model.
           files: |
             ${{ env.release_filename }}

@@ -495,6 +495,7 @@
 #define TR_TRIMS                       "Trims"
 #define TR_FADEIN                      "Fade in"
 #define TR_FADEOUT                     "Fade out"
+#define TR_FADESPEED                   "Transition speed"
 #define TR_DEFAULT                     "(default)"
 #define TR_CHECKTRIMS                  TR("\006Check\012trims", "Check FM Trims")
 #define TR_SWASHTYPE                   "Swash Type"
