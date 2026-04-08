@@ -1181,7 +1181,7 @@ void evalMixes(uint8_t tick10ms)
         smoothTrans.fromMode = lastFlightMode;
         smoothTrans.toMode = fm;
         smoothTrans.startTime = get_tmr10ms();
-        smoothTrans.duration = fadeTime * 100;
+        smoothTrans.duration = fadeTime * 10;  // fadeTime is in 0.1s units, *10 = 10ms units
 
         for (int i = 0; i < MAX_OUTPUT_CHANNELS; i++) {
           smoothTrans.baseValue[i] = chans[i];
