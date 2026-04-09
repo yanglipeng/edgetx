@@ -18,9 +18,64 @@ jobs:
       fail-fast: false
       matrix:
         target:
+          # X7 Series
+          - x7
+          - x7access
+          - t12
+          - tx12
+          - tx12mk2
+          - gx12
+          - boxer
+          - t8
+          - zorro
+          - pocket
+          - mt12
+          - tlite
+          - tpro
+          - tprov2
+          - tpros
+          - bumblebee
+          - t20
+          - t12max
+          - t14
+          - t20v2
+          - lr3pro
+          - commando8
+          - v12
+          - v14
+          # X9 Series
+          - xlite
+          - xlites
+          - x9lite
+          - x9lites
+          - x9d
+          - x9dp
+          - x9dp2019
+          - x9e
+          - x9e-hall
+          # X10 Series
+          - x10
+          - x10express
+          - x12s
+          - t15
+          - t16
+          - t18
+          - t15pro
+          - tx15
           - tx16s
           - tx16smk3
+          - f16
           - v16
+          # PL18 Series
+          - nv14
+          - el18
+          - pl18
+          - pl18ev
+          - pl18u
+          - nb4p
+          # Other
+          - st16
+          - pa01
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
       volumes:
@@ -79,9 +134,20 @@ jobs:
             **Branch:** main
 
             ### Supported Radios
-            - TX16S
-            - TX16S MK3
-            - V16 (Helloradiosky)
+            #### X7 Series
+            x7, x7access, t12, tx12, tx12mk2, gx12, boxer, t8, zorro, pocket, mt12, tlite, tpro, tprov2, tpros, bumblebee, t20, t12max, t14, t20v2, lr3pro, commando8, v12, v14
+
+            #### X9 Series
+            xlite, xlites, x9lite, x9lites, x9d, x9dp, x9dp2019, x9e, x9e-hall
+
+            #### X10 Series
+            x10, x10express, x12s, t15, t16, t18, t15pro, tx15, tx16s, tx16smk3, f16, v16
+
+            #### PL18 Series
+            nv14, el18, pl18, pl18ev, pl18u, nb4p
+
+            #### Other
+            st16, pa01
 
             ### Changes
             This build includes the Smooth Transition feature for F3C flying.
