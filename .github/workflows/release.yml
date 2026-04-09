@@ -5,16 +5,22 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Targets to build (comma separated)'
+        required: false
+        default: 'tx16s,tx16smk3,v16'
 
 concurrency:
-  group: 'release-build'
+  group: 'release-build-${{ github.ref }}'
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build firmware
+    name: Build ${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         target:
           - tx16s
@@ -22,24 +28,28 @@ jobs:
           - v16
     container:
       image: ghcr.io/edgetx/edgetx-dev:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
       volumes:
         - ${{ github.workspace }}:/src
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Build firmware ${{ matrix.target }}
         env:
           FLAVOR: ${{ matrix.target }}
           EXTRA_OPTIONS: "-DTRANSLATIONS=CN"
-          EDGETX_VERSION_SUFFIX: ""
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: ./tools/build-gh.sh
 
-      - name: Package firmware ${{ matrix.target }}
-        uses: actions/upload-artifact@v7
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: edgetx-firmware-${{ matrix.target }}
           path: |
@@ -47,56 +57,49 @@ jobs:
             LICENSE
             *.bin
             *.uf2
-          retention-days: 5
-          if-no-files-found: error
+          retention-days: 7
 
   release:
     name: Create Release
     runs-on: ubuntu-latest
     needs: build
+    if: always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
     permissions:
       contents: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - name: Check build results
+        run: |
+          echo "Checking build results..."
+          echo "Build status: ${{ needs.build.result }}"
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        if: needs.build.result == 'success'
         with:
           pattern: edgetx-firmware-*
           path: edgetx-firmware
           merge-multiple: true
 
-      - name: Get version
-        id: version
+      - name: List downloaded files
         run: |
-          VERSION=$(cat VERSION.txt 2>/dev/null || echo "v2.10.0-dev")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Downloaded files:"
+          ls -la edgetx-firmware/ 2>/dev/null || echo "No files downloaded"
 
-      - name: Compose release filename
-        run: |
-          echo "release_filename=edgetx-firmware-${GITHUB_SHA::8}.zip" >> $GITHUB_ENV
-          echo "build_date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
-
-      - name: Zip release file
-        uses: montudor/action-zip@v1
-        with:
-          args: zip -qq -j -r ${{ env.release_filename }} ./edgetx-firmware
-
-      - name: Create GitHub Release
+      - name: Create Release
+        if: needs.build.result == 'success'
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.version.outputs.version }}-${{ github.sha }}
+          tag_name: main-${{ github.sha }}
           prerelease: true
-          name: "${{ steps.version.outputs.version }} (${{ github.sha }})"
+          generate_release_notes: true
+          name: "EdgeTX Main Build (${{ github.sha }})"
           body: |
             ## EdgeTX Firmware Build
 
             **Commit:** ${{ github.sha }}
-            **Built:** ${{ env.build_date }}
+            **Built:** ${{ github.event.head_commit.timestamp }}
             **Branch:** main
 
             ### Supported Radios
@@ -104,10 +107,24 @@ jobs:
             - TX16S MK3
             - V16 (Helloradiosky)
 
-            ### Installation
-            Download and extract the firmware file for your radio model.
-
             ### Changes
             This build includes the Smooth Transition feature for F3C flying.
           files: |
-            ${{ env.release_filename }}
+            edgetx-firmware/*.zip
+            edgetx-firmware/*.bin
+            edgetx-firmware/*.uf2
+            edgetx-firmware/fw.json
+
+      - name: Upload all artifacts as workflow artifacts
+        if: needs.build.result == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-firmware-builds
+          path: edgetx-firmware/
+          retention-days: 30
+
+      - name: Report failure
+        if: needs.build.result != 'success'
+        run: |
+          echo "Build failed. Check the build job logs for details."
+          echo "Artifacts may be available from the individual build jobs."
