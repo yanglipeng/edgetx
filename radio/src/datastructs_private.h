@@ -238,9 +238,9 @@ PACK(struct trim_t {
 PACK(struct FlightModeData {
   trim_t trim[MAX_TRIMS];
   NOBACKUP(char name[LEN_FLIGHT_MODE_NAME]);
-  uint16_t swtch:10 ENUM(SwitchSources) CUST(r_swtchSrc,w_swtchSrc);
-  uint16_t spare:5 SKIP;
-  uint16_t fadeSmooth:1 SKIP;
+  int16_t swtch:10 ENUM(SwitchSources) CUST(r_swtchSrc,w_swtchSrc);
+  int16_t spare:5 SKIP;
+  int16_t fadeSmooth:1 SKIP;
   uint8_t fadeIn;
   uint8_t fadeOut;
   gvar_t gvars[MAX_GVARS] FUNC(gvar_is_active);
