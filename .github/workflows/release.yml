@@ -45,7 +45,6 @@ jobs:
           - v14
           # X9 Series
           - xlite
-          - xlites
           - x9lite
           - x9lites
           - x9d
