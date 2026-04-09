@@ -117,7 +117,7 @@ static inline void check_struct()
 #elif defined(RADIO_H7RS)
   // CHKSIZE()
 #elif defined(PCBHORUS)
-  CHKSIZE(ModelData, 6850);
+  CHKSIZE(ModelData, 6841);
 #else
   #error CHKSIZE not set up
 #endif
