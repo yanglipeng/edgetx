@@ -240,10 +240,10 @@ PACK(struct FlightModeData {
   NOBACKUP(char name[LEN_FLIGHT_MODE_NAME]);
   // swtch of phase[0] is not used
   int16_t swtch:10 ENUM(SwitchSources) CUST(r_swtchSrc,w_swtchSrc);
-  int16_t spare:5 SKIP;
-  int16_t fadeSmooth:1 SKIP;
+  int16_t spare:6 SKIP;
   uint8_t fadeIn;
   uint8_t fadeOut;
+  uint8_t fadeSmooth;
   gvar_t gvars[MAX_GVARS] FUNC(gvar_is_active);
 });
 
