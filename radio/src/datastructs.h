@@ -88,35 +88,35 @@ static inline void check_struct()
   CHKSIZE(RadioData, 948);
 #endif
 
-#if defined(RADIO_TPRO) || defined(RADIO_TPROV2) || defined(RADIO_BUMBLEBEE)
-  CHKSIZE(ModelData, 6364);
+#if defined(RADIO_TPRO) || defined(RADIO_TPROV2) || defined(RADIO_TPROS) || defined(RADIO_BUMBLEBEE)
+  CHKSIZE(ModelData, 6355);
 #elif defined(RADIO_FAMILY_T20)
-  CHKSIZE(ModelData, 6400);
+  CHKSIZE(ModelData, 6391);
 #elif defined(RADIO_GX12)
-  CHKSIZE(ModelData, 6428);
+  CHKSIZE(ModelData, 6419);
 #elif defined(PCBX9E)
-  CHKSIZE(ModelData, 6780);
+  CHKSIZE(ModelData, 6771);
 #elif defined(PCBX9D) || defined(PCBX9DP)
-  CHKSIZE(ModelData, 6779);
-#elif defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE) || defined(RADIO_T14) || defined(RADIO_T12MAX)
-  CHKSIZE(ModelData, 6338);
+  CHKSIZE(ModelData, 6770);
+#elif defined(PCBX7) || defined(PCBXLITE) || defined(PCBXLITES) || defined(PCBX9LITE) || defined(PCBX9LITES) || defined(RADIO_T14) || defined(RADIO_T12MAX) || defined(RADIO_T20V2)
+  CHKSIZE(ModelData, 6329);
 #elif defined(PCBPL18)
   #if defined(RADIO_NB4P) || defined(RADIO_NV14_FAMILY)
-    CHKSIZE(ModelData, 6884);
+    CHKSIZE(ModelData, 6875);
   #else
-    CHKSIZE(ModelData, 6886);
+    CHKSIZE(ModelData, 6877);
   #endif
 #elif defined(PCBST16) || defined(RADIO_T15PRO) || defined(RADIO_TX15)
-  CHKSIZE(ModelData, 7650);
+  CHKSIZE(ModelData, 7641);
 #elif defined(PCBPA01)
-  CHKSIZE(ModelData, 7591);
+  CHKSIZE(ModelData, 7582);
 #elif defined(RADIO_T15)
-  CHKSIZE(ModelData, 6876);
+  CHKSIZE(ModelData, 6867);
 #elif defined(RADIO_TX16SMK3)
   CHKSIZE(ModelData, 7642);
 #elif defined(RADIO_H7RS)
   // CHKSIZE()
-#elif defined(PCBHORUS)
+#elif defined(PCBHORUS) || defined(COLORLCD)
   CHKSIZE(ModelData, 6841);
 #else
   #error CHKSIZE not set up
