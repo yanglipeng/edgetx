@@ -51,7 +51,7 @@ static inline void check_struct()
   CHKSIZE(GVarData, 7);
   CHKSIZE(RFAlarmData, 2);
   CHKSIZE(TrainerData, 16);
-  CHKSIZE(FlightModeData, 45);
+  CHKSIZE(FlightModeData, 5 + 2 * MAX_GVARS + 2 * MAX_TRIMS + LEN_FLIGHT_MODE_NAME);
   CHKSIZE(CustomFunctionData, 11);
 
 #if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
