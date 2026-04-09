@@ -304,6 +304,7 @@ bool setTrimValue(uint8_t phase, uint8_t idx, int trim);
 #include "gvars.h"
 
 void flightReset(uint8_t check=true);
+void mixerReset();
 
 #define DURATION_MS_PREC2(x) ((x)/10)
 

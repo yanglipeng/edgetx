@@ -1122,6 +1122,7 @@ void flightReset(uint8_t check)
 
   telemetryReset();
 
+  mixerReset();
   s_mixer_first_run_done = false;
 
   START_SILENCE_PERIOD();

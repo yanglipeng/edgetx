@@ -1150,6 +1150,11 @@ struct SmoothTransition {
 
 static SmoothTransition smoothTrans = {0};
 
+void mixerReset()
+{
+  memset(&smoothTrans, 0, sizeof(smoothTrans));
+}
+
 void evalMixes(uint8_t tick10ms)
 {
   int32_t sum_chans512[MAX_OUTPUT_CHANNELS];
