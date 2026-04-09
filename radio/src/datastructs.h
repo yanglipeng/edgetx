@@ -51,7 +51,11 @@ static inline void check_struct()
   CHKSIZE(GVarData, 7);
   CHKSIZE(RFAlarmData, 2);
   CHKSIZE(TrainerData, 16);
+#if defined(RADIO_TX16SMK3) || defined(RADIO_ST16) || defined(PCBST16) || defined(RADIO_T15PRO) || defined(RADIO_TX15)
+  CHKSIZE(FlightModeData, 60);
+#else
   CHKSIZE(FlightModeData, 44);
+#endif
   CHKSIZE(CustomFunctionData, 11);
 
 #if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
@@ -113,7 +117,7 @@ static inline void check_struct()
 #elif defined(RADIO_T15)
   CHKSIZE(ModelData, 6876);
 #elif defined(RADIO_TX16SMK3)
-  CHKSIZE(ModelData, 7650);
+  CHKSIZE(ModelData, 7642);
 #elif defined(RADIO_H7RS)
   // CHKSIZE()
 #elif defined(PCBHORUS)
