@@ -39,6 +39,7 @@ enum MenuModelFlightModeItems {
   ITEM_MODEL_FLIGHT_MODE_TRIMS2,
   ITEM_MODEL_FLIGHT_MODE_FADE_IN,
   ITEM_MODEL_FLIGHT_MODE_FADE_OUT,
+  ITEM_MODEL_FLIGHT_MODE_FADE_SMOOTH,
 #if MAX_GVARS > 0
   ITEM_MODEL_FLIGHT_MODE_GVARS_LABEL,
   ITEM_MODEL_FLIGHT_MODE_GV1,
@@ -100,7 +101,7 @@ void menuModelFlightModeOne(event_t event)
     (uint8_t)(s_currIdx == 0 ? HIDDEN_ROW : 0),
     (uint8_t)((trim_lines == 1) ? trim_count - 1 : 3),
     (uint8_t)((trim_lines == 2) ? trim_count - 5 : HIDDEN_ROW),
-    0, 0,
+    0, 0, 0,
 #if defined(GVARS)
     READONLY_ROW,
     (uint8_t)(s_currIdx == 0 ? 1 : 2),  // Same value used for all GV rows
@@ -147,6 +148,15 @@ void menuModelFlightModeOne(event_t event)
 
       case ITEM_MODEL_FLIGHT_MODE_FADE_OUT:
         fm->fadeOut = editDelay(y, event, attr, STR_FADEOUT, fm->fadeOut, PREC1);
+        break;
+
+      case ITEM_MODEL_FLIGHT_MODE_FADE_SMOOTH:
+        lcdDrawTextAlignedLeft(y, STR_FADESMOOTH);
+        if (attr) {
+          fm->fadeSmooth = !fm->fadeSmooth;
+          storageDirty(EE_MODEL);
+        }
+        lcdDrawChar(MIXES_2ND_COLUMN, y, fm->fadeSmooth ? 'X' : '.', attr);
         break;
 
 #if defined(GVARS)

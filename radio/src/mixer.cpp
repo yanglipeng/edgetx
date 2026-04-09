@@ -1166,41 +1166,36 @@ void evalMixes(uint8_t tick10ms)
 
   if (lastFlightMode != fm) {
     flightModeTransitionTime = get_tmr10ms();
+    smoothTrans.active = 0;
 
     if (lastFlightMode == 255) {
       fp_act[fm] = MAX_ACT;
-      smoothTrans.active = 0;
     }
     else {
-      uint8_t fadeSmooth = g_model.flightModeData[fm].fadeSmooth;
       uint8_t fadeTime = max(g_model.flightModeData[lastFlightMode].fadeOut, g_model.flightModeData[fm].fadeIn);
       uint16_t transitionMask = (0x01u << lastFlightMode) + (0x01u << fm);
 
-      if (fadeSmooth && fadeTime > 0) {
+      if (g_model.flightModeData[fm].fadeSmooth && fadeTime > 0) {
         smoothTrans.active = 1;
         smoothTrans.fromMode = lastFlightMode;
         smoothTrans.toMode = fm;
         smoothTrans.startTime = get_tmr10ms();
-        smoothTrans.duration = fadeTime * 10;  // fadeTime is in 0.1s units, *10 = 10ms units
+        smoothTrans.duration = fadeTime * 10;
 
         for (int i = 0; i < MAX_OUTPUT_CHANNELS; i++) {
           smoothTrans.baseValue[i] = chans[i];
         }
 
         mixerCurrentFlightMode = fm;
-        evalFlightModeMixes(e_perout_mode_normal, tick10ms);
-
         flightModesFade &= ~transitionMask;
         fp_act[lastFlightMode] = 0;
         fp_act[fm] = MAX_ACT;
       }
       else if (fadeTime) {
-        smoothTrans.active = 0;
         flightModesFade |= transitionMask;
         delta = (MAX_ACT / 10) / fadeTime;
       }
       else {
-        smoothTrans.active = 0;
         flightModesFade &= ~transitionMask;
         fp_act[lastFlightMode] = 0;
         fp_act[fm] = MAX_ACT;
