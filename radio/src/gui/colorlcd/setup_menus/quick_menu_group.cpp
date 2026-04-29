@@ -30,11 +30,11 @@ static void etx_quick_button_constructor(const lv_obj_class_t* class_p,
                                          lv_obj_t* obj)
 {
   etx_obj_add_style(obj, styles->rounded, LV_PART_MAIN);
-  etx_txt_color(obj, COLOR_THEME_QM_FG_INDEX, LV_PART_MAIN);
+  etx_txt_color(obj, COLOR_THEME_PRIMARY1_INDEX, LV_PART_MAIN);
   etx_obj_add_style(obj, styles->pad_zero, LV_PART_MAIN);
-  etx_solid_bg(obj, COLOR_THEME_QM_BG_INDEX, LV_PART_MAIN);
+  etx_solid_bg(obj, COLOR_THEME_PRIMARY2_INDEX, LV_PART_MAIN);
 
-  etx_solid_bg(obj, COLOR_THEME_QM_FG_INDEX, LV_PART_MAIN | LV_STATE_FOCUSED);
+  etx_solid_bg(obj, COLOR_THEME_PRIMARY1_INDEX, LV_PART_MAIN | LV_STATE_FOCUSED);
 }
 
 static const lv_obj_class_t etx_quick_button_class = {
@@ -64,18 +64,18 @@ class QuickMenuButton : public ButtonBase
       ButtonBase(parent, {}, pressHandler, etx_quick_button_create),
       visibleHandler(std::move(visibleHandler))
   {
-    iconPtr = new StaticIcon(this, (QuickMenuGroup::QM_BUTTON_WIDTH - QuickMenuGroup::QM_ICON_SIZE) / 2, PAD_SMALL, icon, COLOR_THEME_QM_FG_INDEX);
+    iconPtr = new StaticIcon(this, (QuickMenuGroup::QM_BUTTON_WIDTH - QuickMenuGroup::QM_ICON_SIZE) / 2, PAD_SMALL, icon, COLOR_THEME_PRIMARY1_INDEX);
 #if VERSION_MAJOR > 2
     etx_obj_add_style(iconPtr->getLvObj(), styles->qmdisabled, LV_PART_MAIN | LV_STATE_DISABLED);
 #endif
-    etx_img_color(iconPtr->getLvObj(), COLOR_THEME_QM_BG_INDEX, LV_STATE_USER_1);
+    etx_img_color(iconPtr->getLvObj(), COLOR_THEME_PRIMARY2_INDEX, LV_STATE_USER_1);
 
     textPtr = new StaticText(this, {0, QuickMenuGroup::QM_ICON_SIZE + PAD_TINY * 2, QuickMenuGroup::QM_BUTTON_WIDTH - 1, 0},
-                   title, COLOR_THEME_QM_FG_INDEX, CENTERED | FONT(XS));
+                   title, COLOR_THEME_PRIMARY1_INDEX, CENTERED | FONT(XS));
 #if VERSION_MAJOR > 2
     etx_obj_add_style(textPtr->getLvObj(), styles->qmdisabled, LV_PART_MAIN | LV_STATE_DISABLED);
 #endif
-    etx_txt_color(textPtr->getLvObj(), COLOR_THEME_QM_BG_INDEX, LV_STATE_USER_1);
+    etx_txt_color(textPtr->getLvObj(), COLOR_THEME_PRIMARY2_INDEX, LV_STATE_USER_1);
 
     lv_obj_add_event_cb(lvobj, QuickMenuButton::focused_cb, LV_EVENT_FOCUSED, nullptr);
     lv_obj_add_event_cb(lvobj, QuickMenuButton::defocused_cb, LV_EVENT_DEFOCUSED, nullptr);

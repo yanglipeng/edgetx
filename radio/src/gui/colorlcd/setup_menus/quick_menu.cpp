@@ -256,14 +256,14 @@ QuickMenu::QuickMenu() :
   setWindowFlag(OPAQUE);
 
   etx_obj_add_style(lvobj, styles->bg_opacity_90, LV_PART_MAIN);
-  etx_bg_color(lvobj, COLOR_THEME_QM_BG_INDEX);
+  etx_bg_color(lvobj, COLOR_THEME_PRIMARY2_INDEX);
 
   auto sep = lv_obj_create(lvobj);
-  etx_solid_bg(sep, COLOR_THEME_QM_FG_INDEX);
+  etx_solid_bg(sep, COLOR_THEME_PRIMARY1_INDEX);
   lv_obj_set_size(sep, QM_W, PAD_THREE);
 
   auto mask = getBuiltinIcon(ICON_TOP_LOGO);
-  new StaticIcon(this, (QM_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_QM_FG_INDEX);
+  new StaticIcon(this, (QM_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_PRIMARY1_INDEX);
 
   new ButtonBase(
     this, {0, 0, QM_W, EdgeTxStyles::UI_ELEMENT_HEIGHT},

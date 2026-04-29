@@ -218,10 +218,10 @@ const lv_style_const_prop_t disabled_props[] = {
 LV_STYLE_CONST_MULTI_INIT(EdgeTxStyles::disabled, disabled_props);
 
 static lv_color_t qm_disabled_filter_cb(const lv_color_filter_dsc_t* f,
-                                 lv_color_t color, lv_opa_t opa)
+                                   lv_color_t color, lv_opa_t opa)
 {
   LV_UNUSED(f);
-  return lv_color_mix(makeLvColor(COLOR_THEME_QM_FG_INDEX), color, opa);
+  return lv_color_mix(makeLvColor(COLOR_THEME_PRIMARY1_INDEX), color, opa);
 }
 
 const lv_color_filter_dsc_t qm_disabled_filter = {.filter_cb = qm_disabled_filter_cb,
