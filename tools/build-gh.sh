@@ -54,6 +54,11 @@ COMMON_OPTIONS+=${EXTRA_OPTIONS}" "
 
 : "${FIRMARE_TARGET:="firmware-size"}"
 
+# Add TRANSLATIONS to cmake options if set
+if [[ -n ${TRANSLATIONS} ]]; then
+  COMMON_OPTIONS+="-DTRANSLATIONS=${TRANSLATIONS} "
+fi
+
 # Determine parallel jobs
 determine_max_jobs
 
