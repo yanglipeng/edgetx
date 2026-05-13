@@ -89,6 +89,7 @@ jobs:
       - name: Build ${{ matrix.target }}
         env:
           FLAVOR: ${{ matrix.target }}
+          TRANSLATIONS: CN
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: |
           echo "Running firmware build"
