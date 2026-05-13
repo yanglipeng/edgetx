@@ -40,7 +40,9 @@ class QuickMenuGroup : public Window
   ButtonBase* addButton(EdgeTxIcon icon, const char* title,
                  std::function<void(void)> pressHandler,
                  std::function<bool(void)> visibleHandler = nullptr,
-                 std::function<void(bool)> focusHandler = nullptr);
+                 std::function<void(bool)> focusHandler = nullptr,
+                 LcdColorIndex accentColor = COLOR_THEME_PRIMARY3_INDEX,
+                 LcdColorIndex iconDefaultColor = COLOR_THEME_PRIMARY1_INDEX);
 
   void setGroup();
   void setFocus();

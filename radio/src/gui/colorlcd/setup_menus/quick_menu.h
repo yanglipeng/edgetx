@@ -59,6 +59,13 @@ struct QMMainDef {
 
 extern const QMMainDef qmTopItems[];
 
+// Category accent colors for QuickMenu redesign (light bg + color-coded categories)
+// Maps each top-level qmTopItems entry to its accent color
+#if VERSION_MAJOR > 2
+extern const LcdColorIndex categoryColors[];
+extern const size_t categoryColorsCount;
+#endif
+
 //-----------------------------------------------------------------------------
 
 std::string replaceAll(std::string str, const std::string& from, const std::string& to);

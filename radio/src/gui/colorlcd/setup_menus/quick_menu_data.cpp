@@ -193,4 +193,16 @@ const QMMainDef qmTopItems[] = {
   { EDGETX_ICONS_COUNT }
 };
 
+// Category accent colors for QuickMenu light-background redesign
+// Each entry maps to the corresponding index in qmTopItems[]
+const LcdColorIndex categoryColors[] = {
+    COLOR_THEME_ACTIVE_INDEX,       // 0: ICON_QM_FAVORITES - Favorites
+    COLOR_THEME_PRIMARY3_INDEX,     // 1: ICON_MODEL_SELECT - Manage Models
+    COLOR_THEME_SECONDARY1_INDEX,   // 2: ICON_MODEL - Model
+    COLOR_THEME_FOCUS_INDEX,        // 3: ICON_RADIO - Radio
+    COLOR_THEME_SECONDARY2_INDEX,   // 4: ICON_THEME - Screens/Themes
+    COLOR_THEME_EDIT_INDEX,         // 5: ICON_RADIO_TOOLS - Tools
+};
+const size_t categoryColorsCount = sizeof(categoryColors) / sizeof(categoryColors[0]);
+
 #endif

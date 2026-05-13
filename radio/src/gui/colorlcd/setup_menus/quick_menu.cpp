@@ -63,8 +63,10 @@ int QMMainDef::getIndex(QMPage n) const
 class QuickSubMenu
 {
  public:
-  QuickSubMenu(Window* parent, QuickMenu* quickMenu, const QMMainDef* mainDef):
-    parent(parent), quickMenu(quickMenu), mainDef(mainDef)
+  QuickSubMenu(Window* parent, QuickMenu* quickMenu, const QMMainDef* mainDef,
+               LcdColorIndex accentColor):
+    parent(parent), quickMenu(quickMenu), mainDef(mainDef),
+    accentColor(accentColor)
   {}
 
   bool isSubMenu(QMPage n)
@@ -93,7 +95,7 @@ class QuickSubMenu
                         [=]() -> uint8_t {
                           activate();
                           return 0;
-                        }, 
+                        },
                         mainDef->enabled,
                         [=](bool focus) {
                           if (!quickMenu->deleted()) {
@@ -106,7 +108,8 @@ class QuickSubMenu
                             if (!focus && quickMenu->getTopMenu())
                               quickMenu->getTopMenu()->setGroup();
                           }
-                        });
+                        },
+                        accentColor, accentColor);
 
     return menuButton;
   }
@@ -153,10 +156,12 @@ class QuickSubMenu
       } else {
         title = getLuaTool(pg - QM_APP)->label.c_str();
       }
+      // sub-menu items: accent color for focus, PRIMARY1 (black) as default icon
       subMenu->addButton(mainDef->subMenuItems[i].icon, title,
           std::bind(&QuickSubMenu::onPress, this, i),
           mainDef->subMenuItems[i].enabled,
-          [=](bool focus) { if (focus) QuickMenu::setCurrentPage(mainDef->subMenuItems[i].qmPage, mainDef->icon); });
+          [=](bool focus) { if (focus) QuickMenu::setCurrentPage(mainDef->subMenuItems[i].qmPage, mainDef->icon); },
+          accentColor, COLOR_THEME_PRIMARY1_INDEX);
     }
 
     doLayout();
@@ -220,6 +225,7 @@ class QuickSubMenu
   Window* parent;
   QuickMenu* quickMenu;
   const QMMainDef* mainDef;
+  LcdColorIndex accentColor;
   QuickMenuGroup* subMenu = nullptr;
   ButtonBase* menuButton = nullptr;
 };
@@ -255,24 +261,43 @@ QuickMenu::QuickMenu() :
 {
   setWindowFlag(OPAQUE);
 
-  etx_obj_add_style(lvobj, styles->bg_opacity_90, LV_PART_MAIN);
-  etx_bg_color(lvobj, COLOR_THEME_QM_BG_INDEX);
+  // Main background: light/white
+  etx_solid_bg(lvobj, COLOR_THEME_PRIMARY2_INDEX);
 
-  auto sep = lv_obj_create(lvobj);
-  etx_solid_bg(sep, COLOR_THEME_QM_FG_INDEX);
-  lv_obj_set_size(sep, QM_W, PAD_THREE);
+#if VERSION_MAJOR == 2
+  // v2: centered popup with dark top bar + white content area
+  auto topBar = new Window(this, {0, 0, QM_W, EdgeTxStyles::UI_ELEMENT_HEIGHT});
+  etx_solid_bg(topBar->getLvObj(), COLOR_THEME_PRIMARY3_INDEX);
 
   auto mask = getBuiltinIcon(ICON_TOP_LOGO);
-  new StaticIcon(this, (QM_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_QM_FG_INDEX);
+  new StaticIcon(topBar, (QM_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_PRIMARY2_INDEX);
 
   new ButtonBase(
-    this, {0, 0, QM_W, EdgeTxStyles::UI_ELEMENT_HEIGHT},
+    topBar, {0, 0, QM_W, EdgeTxStyles::UI_ELEMENT_HEIGHT},
     [=]() -> uint8_t {
       inSubMenu = false;
       onCancel();
       return 0;
     },
     window_create);
+#else
+  // v3+: full-screen white background
+  // Dark top bar with logo and close button
+  auto topBar = new Window(this, {0, 0, LCD_W, EdgeTxStyles::UI_ELEMENT_HEIGHT});
+  etx_solid_bg(topBar->getLvObj(), COLOR_THEME_PRIMARY3_INDEX);
+
+  auto mask = getBuiltinIcon(ICON_TOP_LOGO);
+  new StaticIcon(topBar, (LCD_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_PRIMARY2_INDEX);
+
+  new ButtonBase(
+    topBar, {0, 0, LCD_W, EdgeTxStyles::UI_ELEMENT_HEIGHT},
+    [=]() -> uint8_t {
+      inSubMenu = false;
+      onCancel();
+      return 0;
+    },
+    window_create);
+#endif
 
   auto box = new Window(this, {QM_MAIN_X, QM_MAIN_Y, QM_MAIN_W, QM_MAIN_H});
 
@@ -286,11 +311,19 @@ QuickMenu::QuickMenu() :
 
   for (int i = 0; qmTopItems[i].icon != EDGETX_ICONS_COUNT; i += 1) {
     if (qmTopItems[i].pageAction == QM_ACTION) {
+#if VERSION_MAJOR > 2
+      LcdColorIndex catColor = (i < (int)categoryColorsCount) ? categoryColors[i] : COLOR_THEME_PRIMARY3_INDEX;
+      mainMenu->addButton(qmTopItems[i].icon, STR_VAL(qmTopItems[i].qmTitle),
+                  [=]() { onSelect(true); qmTopItems[i].action(); }, qmTopItems[i].enabled,
+                  nullptr, catColor, catColor);
+#else
       mainMenu->addButton(qmTopItems[i].icon, STR_VAL(qmTopItems[i].qmTitle),
                   [=]() { onSelect(true); qmTopItems[i].action(); }, qmTopItems[i].enabled);
+#endif
 #if VERSION_MAJOR > 2
     } else {
-      auto sub = new QuickSubMenu(box, this, &qmTopItems[i]);
+      LcdColorIndex catColor = (i < (int)categoryColorsCount) ? categoryColors[i] : COLOR_THEME_PRIMARY3_INDEX;
+      auto sub = new QuickSubMenu(box, this, &qmTopItems[i], catColor);
       sub->addButton();
       subMenus.emplace_back(sub);
 #endif
