@@ -217,11 +217,13 @@ def main():
     # Order: glyph_dsc, cmap lists, glyph_bitmap (no kern for DSEG7)
     uncomp_data = bytearray()
 
-    # 1. glyph_dsc array (16 bytes per entry: uint32_t+uint32_t+uint16_t+uint16_t+int16_t+int16_t)
+    # 1. glyph_dsc array (8 bytes per entry when LV_FONT_FMT_TXT_LARGE=0)
+    #    LVGL struct: uint32_t bitmap_index:20 + adv_w:12, uint8_t box_w, uint8_t box_h,
+    #    int8_t ofs_x, int8_t ofs_y
     for gd in glyph_dsc_list:
-        uncomp_data += struct.pack('<IIHHhh',
-                                   gd['bitmap_index'],
-                                   gd['adv_w'],
+        packed = (gd['bitmap_index'] & 0xFFFFF) | ((gd['adv_w'] & 0xFFF) << 20)
+        uncomp_data += struct.pack('<I', packed)
+        uncomp_data += struct.pack('<BBbb',
                                    gd['box_w'],
                                    gd['box_h'],
                                    gd['ofs_x'],
