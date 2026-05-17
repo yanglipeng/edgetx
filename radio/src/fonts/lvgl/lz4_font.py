@@ -272,12 +272,14 @@ def main():
         c_var = c_var[8:]  # remove 'lv_font_' prefix
 
     # ---- Calculate buffer size for decompression ----
+    # Derived from EdgeTX lz4_font.cpp using actual sizeof() values on ARM32:
+    #   sizeof(lv_font_t) + sizeof(lv_font_fmt_txt_dsc_t) + sizeof(lv_font_fmt_txt_glyph_cache_t) = 120
+    #   sizeof(lv_font_fmt_txt_cmap_t) = 32
+    #   sizeof(lv_font_fmt_txt_kern_classes_t) = 16
     buf_size = (len(uncomp_data) +
-                68 +  # sizeof(lv_font_t) approximate
-                32 +  # sizeof(lv_font_fmt_txt_dsc_t)
-                32 +  # sizeof(lv_font_fmt_txt_glyph_cache_t)
-                cmap_num * 20 +  # sizeof(lv_font_fmt_txt_cmap_t)
-                (0 if no_kern else (32 if kern_classes else 0)))
+                120 +  # sizeof(lv_font_t) + sizeof(lv_font_fmt_txt_dsc_t) + sizeof(lv_font_fmt_txt_glyph_cache_t)
+                cmap_num * 32 +  # sizeof(lv_font_fmt_txt_cmap_t) on 32-bit ARM
+                (16 if (kern_classes and not no_kern) else 0))
 
     # ---- Write output .c file ----
     out_path = output_name + '.c'
