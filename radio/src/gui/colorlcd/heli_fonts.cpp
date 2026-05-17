@@ -79,7 +79,7 @@ static void initHeliFontBuffers()
   extern int _heap_start;
   extern int _heap_end;
   extern unsigned char* heap;
-  extern caddr_t _sbrk(int nbytes);
+  extern void* _sbrk(int nbytes);
   uint8_t* b = (uint8_t*)_sbrk(sz);
 #endif
 
