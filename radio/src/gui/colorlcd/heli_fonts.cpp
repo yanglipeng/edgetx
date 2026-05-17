@@ -27,6 +27,9 @@
 #include "lz4/lz4.h"
 #include "lz4_fonts.h"
 
+#include <cstdlib>
+#include <cstring>
+
 #if !defined(BOOT)
 
 extern "C" {
