@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 
 #if !defined(BOOT)
 
@@ -76,11 +77,7 @@ static void initHeliFontBuffers()
 #if defined(SIMU)
   uint8_t* b = (uint8_t*)malloc(sz);
 #else
-  extern int _heap_start;
-  extern int _heap_end;
-  extern unsigned char* heap;
-  extern void* _sbrk(int nbytes);
-  uint8_t* b = (uint8_t*)_sbrk(sz);
+  uint8_t* b = (uint8_t*)sbrk(sz);
 #endif
 
   if (b) {
