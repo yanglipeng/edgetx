@@ -26,6 +26,7 @@
 #include "edgetx.h"
 
 #include "api_colorlcd.h"
+#include "heli_fonts.h"
 
 class LvglWidgetParams
 {
@@ -438,6 +439,36 @@ static int luaLvglGetScrollPos(lua_State *L)
   return 0;
 }
 
+static int luaLvglHeliFont(lua_State *L)
+{
+  int id = luaL_checkinteger(L, 1);
+#if defined(HELI)
+  if (id >= 0 && id < HELI_FONTS_COUNT) {
+    const lv_font_t* font = getHeliFont((HeliFontId)id);
+    if (font)
+      lua_pushlightuserdata(L, (void*)font);
+    else
+      lua_pushnil(L);
+  } else
+#endif
+    lua_pushnil(L);
+  return 1;
+}
+
+static int luaLvglSetFont(lua_State *L)
+{
+  auto p = LvglWidgetObjectBase::checkLvgl(L, 1, true);
+  if (p) {
+    const lv_font_t* font = (const lv_font_t*)lua_touserdata(L, 2);
+    if (font) {
+      lv_obj_t* lvobj = p->getLvObj();
+      if (lvobj)
+        lv_obj_set_style_text_font(lvobj, font, 0);
+    }
+  }
+  return 0;
+}
+
 extern "C" {
 // lvgl functions
 LROT_BEGIN(lvgllib, NULL, 0)
@@ -491,6 +522,7 @@ LROT_BEGIN(lvgllib, NULL, 0)
   LROT_FUNCENTRY(disable, luaLvglDisable)
   LROT_FUNCENTRY(close, luaLvglClose)
   LROT_FUNCENTRY(getScrollPos, luaLvglGetScrollPos)
+  LROT_FUNCENTRY(heliFont, luaLvglHeliFont)
   LROT_NUMENTRY(FLOW_ROW, LV_FLEX_FLOW_ROW)
   LROT_NUMENTRY(FLOW_COLUMN, LV_FLEX_FLOW_COLUMN)
   LROT_NUMENTRY(PAD_TINY, PAD_TINY)
@@ -614,6 +646,7 @@ LROT_BEGIN(lvgl_mt, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY(disable, luaLvglDisable)
   LROT_FUNCENTRY(close, luaLvglClose)
   LROT_FUNCENTRY(getScrollPos, luaLvglGetScrollPos)
+  LROT_FUNCENTRY(setFont, luaLvglSetFont)
 LROT_END(lvgl_mt, NULL, LROT_MASK_GC_INDEX)
 
 LUALIB_API int luaopen_lvgl(lua_State *L)

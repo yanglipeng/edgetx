@@ -270,6 +270,7 @@ class LvglWidgetObjectBase
   void update(lua_State *L);
 
   virtual Window *getWindow() const = 0;
+  virtual lv_obj_t* getLvObj() const = 0;
 
   static LvglWidgetObjectBase *checkLvgl(lua_State *L, int index, bool required = false);
 
@@ -327,6 +328,7 @@ class LvglSimpleWidgetObject : public LvglWidgetObjectBase
   void setFloating(bool isFloating) override;
 
   Window *getWindow() const override { return nullptr; }
+  lv_obj_t* getLvObj() const override { return lvobj; }
 
  protected:
   lv_obj_t* lvobj = nullptr;
@@ -491,6 +493,7 @@ class LvglWidgetObject : public LvglWidgetObjectBase
   void clearRefs(lua_State *L) override;
 
   Window *getWindow() const override { return window; }
+  lv_obj_t* getLvObj() const override { return window ? window->getLvObj() : nullptr; }
 
  protected:
   Window *window = nullptr;

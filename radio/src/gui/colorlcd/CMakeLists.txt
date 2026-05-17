@@ -207,6 +207,7 @@ set(BOOTLOADER_SRC ${BOOTLOADER_SRC}
 set(SRC ${SRC}
   ${LVGL_SOURCES}
   ${LVGL_FONT_SOURCES}
+  ${RADIO_SRC_DIR}/gui/colorlcd/heli_fonts.cpp
   ${RADIO_SRC_DIR}/thirdparty/lz4/lz4.c
 )
 

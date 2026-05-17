@@ -30,6 +30,12 @@ ARROWS="0x21E8=>0x80,0x21E6=>0x81,0x21E7=>0x82,0x21E9=>0x83"
 LATIN_FONT="Roboto/Roboto-Regular.ttf"
 LATIN_FONT_BOLD="Roboto/Roboto-Bold.ttf"
 
+# Heli instrument fonts
+DSEG7_FONT="DSEG14/DSEG7Classic-Regular.ttf"
+DSEG7_BOLD="DSEG14/DSEG7Classic-Bold.ttf"
+# Digits (0-9), A-F (Battery/Fuel), colon, period, plus, minus, space
+DSEG7_CHARS="0x20,0x2D,0x2E,0x30-0x39,0x3A,0x41-0x46"
+
 ASCII="0x20-0x7F"
 DEGREE="0xB0"
 BULLET="0x2022"
@@ -288,6 +294,20 @@ function make_font_set() {
   make_font_lz4 "${name}_bold" "${LATIN_FONT_BOLD}" "${ttf_bold}" 44 "XL" "lrg" "${chars}" "${no_kern}"
 }
 
+function make_dseg7_font() {
+  local name=$1
+  local ttf=$2
+  local size=$3
+  local dir=$4
+
+  echo "Creating DSEG7 font: ${name} (size: ${size})"
+
+  lv_font_conv --no-prefilter --bpp 4 --size "${size}" \
+               --font "../${ttf}" -r "${DSEG7_CHARS}" \
+               --format lvgl -o "lv_font.inc" --force-fast-kern-format --no-compress
+  compress_font "${dir}/lv_font_${name}" "-DNO_KERN"
+}
+
 # Main execution starts here
 main() {
     echo "Starting font generation..."
@@ -304,6 +324,15 @@ main() {
     make_bootloader_font "bl" "Roboto/Roboto-Regular-BL.ttf" 16 "std" # 480x272, 480x320, 320x480
     make_bootloader_font "bl" "Roboto/Roboto-Regular-BL.ttf" 14 "sml" # 320x240
     make_bootloader_font "bl" "Roboto/Roboto-Regular-BL.ttf" 24 "lrg" # 800x480
+
+    # Heli instrument fonts (DSEG7 7-segment for Lua helicopter instrument panel)
+    echo "Generating heli DSEG7 fonts..."
+    make_dseg7_font "dseg7_32" "${DSEG7_FONT}" 32 "std"
+    make_dseg7_font "dseg7_48" "${DSEG7_FONT}" 48 "std"
+    make_dseg7_font "dseg7_64" "${DSEG7_FONT}" 64 "std"
+    make_dseg7_font "dseg7_bold_32" "${DSEG7_BOLD}" 32 "std"
+    make_dseg7_font "dseg7_bold_48" "${DSEG7_BOLD}" 48 "std"
+    make_dseg7_font "dseg7_bold_64" "${DSEG7_BOLD}" 64 "std"
 
     # LXL fonts (no translation chars) - twice size of L, bold
     # echo "Generating LXL fonts..."
