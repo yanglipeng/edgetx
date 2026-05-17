@@ -208,6 +208,12 @@ set(SRC ${SRC}
   ${LVGL_SOURCES}
   ${LVGL_FONT_SOURCES}
   ${RADIO_SRC_DIR}/gui/colorlcd/heli_fonts.cpp
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_32.c
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_48.c
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_64.c
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_bold_32.c
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_bold_48.c
+  ${RADIO_SRC_DIR}/fonts/lvgl/std/lv_font_dseg7_bold_64.c
   ${RADIO_SRC_DIR}/thirdparty/lz4/lz4.c
 )
 
