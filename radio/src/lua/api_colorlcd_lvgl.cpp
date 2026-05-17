@@ -26,6 +26,7 @@
 #include "edgetx.h"
 
 #include "api_colorlcd.h"
+#include "fonts.h"
 #include "heli_fonts.h"
 
 class LvglWidgetParams
@@ -444,11 +445,7 @@ static int luaLvglHeliFont(lua_State *L)
   int id = luaL_checkinteger(L, 1);
 #if defined(HELI)
   if (id >= 0 && id < HELI_FONTS_COUNT) {
-    const lv_font_t* font = getHeliFont((HeliFontId)id);
-    if (font)
-      lua_pushlightuserdata(L, (void*)font);
-    else
-      lua_pushnil(L);
+    lua_pushinteger(L, (FONT_DSEG7_32_INDEX + id) << 8);
   } else
 #endif
     lua_pushnil(L);
@@ -459,7 +456,13 @@ static int luaLvglSetFont(lua_State *L)
 {
   auto p = LvglWidgetObjectBase::checkLvgl(L, 1, true);
   if (p) {
-    const lv_font_t* font = (const lv_font_t*)lua_touserdata(L, 2);
+    const lv_font_t* font = nullptr;
+    if (lua_isinteger(L, 2)) {
+      LcdFlags flags = luaL_checkinteger(L, 2);
+      font = getFont(flags);
+    } else if (lua_islightuserdata(L, 2)) {
+      font = (const lv_font_t*)lua_touserdata(L, 2);
+    }
     if (font) {
       lv_obj_t* lvobj = p->getLvObj();
       if (lvobj)

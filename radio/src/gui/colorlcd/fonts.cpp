@@ -26,6 +26,7 @@
 #endif
 
 #include "fonts.h"
+#include "heli_fonts.h"
 #include "lz4/lz4.h"
 #include "lz4_fonts.h"
 #include "translations/tts/tts.h"
@@ -465,6 +466,10 @@ const lv_font_t* getFont(LcdFlags flags)
   return LV_FONT_DEFAULT;
 #else
   auto fontIndex = FONT_INDEX(flags);
+  // Route DSEG7 indices to heli font table
+  if (fontIndex >= FONT_DSEG7_32_INDEX && fontIndex <= FONT_DSEG7_BOLD_64_INDEX) {
+    return getHeliFont((HeliFontId)(fontIndex - FONT_DSEG7_32_INDEX));
+  }
   if (fontIndex >= FONTS_COUNT) return fontTable[FONT_STD_INDEX].lvglFont;
   decompressFont(fontIndex, fontTable);
   return fontTable[fontIndex].lvglFont;
@@ -479,7 +484,11 @@ uint8_t getFontHeight(LcdFlags flags)
 
 uint8_t getFontHeightCondensed(LcdFlags flags)
 {
-  return getFontHeight(flags) + FontHeightCorrection[FONT_INDEX(flags)];
+  auto fi = FONT_INDEX(flags);
+  // DSEG7 fonts don't have a height correction entry
+  if (fi >= FONT_DSEG7_32_INDEX && fi <= FONT_DSEG7_BOLD_64_INDEX)
+    return getFontHeight(flags);
+  return getFontHeight(flags) + FontHeightCorrection[fi];
 }
 
 int getTextWidth(const char* s, int len, LcdFlags flags)

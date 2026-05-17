@@ -40,6 +40,15 @@ enum FontIndex {
 #define FONT_INDEX(flags) ((FontIndex)(((flags) & FONT_MASK) >> 8u))
 #define FONT(xx) (unsigned(FONT_##xx##_INDEX) << 8u)
 
+// DSEG7 7-segment font indices (outside the FontIndex enum, routed via getHeliFont())
+// Order must match HeliFontId enum in heli_fonts.h
+#define FONT_DSEG7_32_INDEX      8
+#define FONT_DSEG7_48_INDEX      9
+#define FONT_DSEG7_64_INDEX      10
+#define FONT_DSEG7_BOLD_32_INDEX 11
+#define FONT_DSEG7_BOLD_48_INDEX 12
+#define FONT_DSEG7_BOLD_64_INDEX 13
+
 const lv_font_t* getFont(LcdFlags flags);
 uint8_t getFontHeight(LcdFlags flags);
 uint8_t getFontHeightCondensed(LcdFlags flags);
