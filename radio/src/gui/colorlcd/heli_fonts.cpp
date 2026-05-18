@@ -31,6 +31,10 @@
 #include <cstring>
 #include <unistd.h>
 
+#if !defined(SIMU)
+#include "stm32_hal.h"
+#endif
+
 #if !defined(BOOT)
 
 extern "C" {
@@ -133,8 +137,17 @@ static void decompressHeliFont(int idx)
   next += sizeof(lv_font_fmt_txt_cmap_t) * etxFont->cmap_num;
 
   // decompress glyph data
-  LZ4_decompress_safe((const char*)etxFont->compressed, (char*)next,
-                      etxFont->comp_size, etxFont->uncomp_size);
+  int lz4_ret = LZ4_decompress_safe((const char*)etxFont->compressed, (char*)next,
+                                    etxFont->comp_size, etxFont->uncomp_size);
+  if (lz4_ret < 0) {
+    heliFontTable[idx].loaded = true; // mark loaded to avoid retry
+    return;
+  }
+
+#if !defined(SIMU)
+  // Ensure CPU-written data is visible to any subsequent DMA2D reads
+  SCB_CleanInvalidateDCache();
+#endif
 
   // rebuild lv_font_t
   lvglFont->get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt;
