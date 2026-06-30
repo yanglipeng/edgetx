@@ -98,14 +98,18 @@ static void menusTask()
 
       // Enter SLEEP mode (WFI, not STOP).
       // CPU stops; all peripherals (UART, DMA, timers, LCD) keep running.
-      // Telemetry data continues to be received and processed in ISRs.
+      // Telemetry timer keeps firing every 2ms, waking CPU to process data.
       // Any interrupt (telemetry timer 2ms, UART RX, GPIO, RTC) wakes CPU.
       boardEnterStandby();
       boardResumeFromStandby();
 
+      // Process any pending telemetry data in main loop context.
+      // UART DMA was running during WFI, buffering received bytes.
+      telemetryWakeup();
+
       // Woken by interrupt — check wake conditions:
-      // 1. Receiver connected (telemetry data detected in ISR)
-      // 2. Stick or switch moved (ADC/GPIO sampled in ISR context)
+      // 1. Receiver connected (telemetry data detected)
+      // 2. Stick or switch moved (ADC/GPIO sampled)
       // 3. Power button pressed (handled via pwrCheck on next iteration)
       if (TELEMETRY_STREAMING()) {
         // Receiver connected! Save state and reboot to resume.
