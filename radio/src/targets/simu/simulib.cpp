@@ -281,6 +281,8 @@ bool pwrOffPressed()
 void pwrInit() {}
 void pwrOn() {}
 void pwrOff() {}
+void boardEnterStandby() {}
+void boardResumeFromStandby() {}
 
 bool UNEXPECTED_SHUTDOWN() { return false; }
 void SET_POWER_REASON(uint32_t value) {}

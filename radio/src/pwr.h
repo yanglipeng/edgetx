@@ -29,3 +29,7 @@ enum PowerState {
   e_power_press,
   e_power_standby,   // standby mode: peripherals off, RF modules stay powered
 };
+
+// Board standby functions (must be implemented per target)
+void boardEnterStandby();
+void boardResumeFromStandby();
