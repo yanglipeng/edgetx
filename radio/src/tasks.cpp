@@ -59,11 +59,11 @@ mutex_handle_t audioMutex;
 bool perMainEnabled = true;
 #endif
 
-#if defined(PWR_BUTTON_PRESS)
+// ------------------------------------------------------------------
 // Probe model IDs from the model list for CRSF/ELRS modules.
 // Returns true if a matching model was found and loaded.
-// Only meaningful when both CROSSFIRE and STORAGE_MODELSLIST are
-// available; on other targets this is a no-op stub.
+// On non-CRSF / non-modelslist targets this is a no-op stub.
+// ------------------------------------------------------------------
 #if defined(CROSSFIRE) && defined(STORAGE_MODELSLIST)
 static bool tryProbeModelIds()
 {
@@ -72,7 +72,7 @@ static bool tryProbeModelIds()
 
     uint8_t origId = g_model.header.modelId[module];
     bool probed[MAX_RXNUM + 1] = {false};
-    probed[origId] = true;  // Already tried in Phase 1 sniff
+    probed[origId] = true;  // Already tried by the normal connection
 
     uint8_t foundId = 0;
     bool found = false;
@@ -126,7 +126,7 @@ static bool tryProbeModelIds()
 
       // Skip if it's already the current model
       if (cell == modelslist.getCurrentModel()) {
-        // Current model's module config works, just wake up
+        // Current model's module config works
         moduleState[module].counter = CRSF_FRAME_MODELID;
         g_model.header.modelId[module] = origId;
         return true;
@@ -134,7 +134,7 @@ static bool tryProbeModelIds()
 
       // Switch to the matching model.
       // loadModel() internally stops pulses (preModelLoad) and
-      // restarts them (postModelLoad → pulsesStart) so the mixer
+      // restarts them (postModelLoad -> pulsesStart) so the mixer
       // is running after this call.
       storageFlushCurrentModel();
       storageCheck(true);
@@ -145,8 +145,6 @@ static bool tryProbeModelIds()
 
       // SAFETY: turn on the backlight and use alarms=true so that
       // checkAll() runs throttle / switch / failsafe warnings.
-      // Without this, a throttle stick not at idle could spin the
-      // motor the instant the receiver link is re-established.
       requiredBacklightBright = g_eeGeneral.getBrightness();
       currentBacklightBright = requiredBacklightBright;
       BACKLIGHT_ENABLE();
@@ -160,7 +158,7 @@ static bool tryProbeModelIds()
       return true;
     }
 
-    // Found a modelId but no matching model in list → restore
+    // Found a modelId but no matching model in list -> restore
     moduleState[module].counter = CRSF_FRAME_MODELID;
     g_model.header.modelId[module] = origId;
     return true;  // telemetry is still streaming
@@ -174,7 +172,33 @@ static bool tryProbeModelIds()
   return false;
 }
 #endif
+
+// Periodically probe model IDs during normal (non-standby) operation.
+// Called from the main loop every ~50ms; rate-limited internally to
+// one probe attempt every 30 seconds.
+//
+// Conditions:
+//   - No telemetry streaming (no receiver connected)
+//   - At least 30s since the last probe
+//   - Not in the first 5s after boot
+static void tryAutoSwitchModel()
+{
+#if defined(CROSSFIRE) && defined(STORAGE_MODELSLIST)
+  // Don't probe while a receiver is connected
+  if (TELEMETRY_STREAMING()) return;
+
+  // Rate-limit to one probe every 30 seconds
+  static tmr10ms_t lastProbe = 0;
+  tmr10ms_t now = get_tmr10ms();
+  if ((now - lastProbe) < 3000) return;  // 3000 * 10ms = 30s
+  lastProbe = now;
+
+  // Wait for things to settle after boot
+  if (now < 500) return;  // 5 seconds after power-on
+
+  tryProbeModelIds();
 #endif
+}
 
 static void menusTask()
 {
@@ -286,6 +310,12 @@ static void menusTask()
   while (pwrCheck() != e_power_off) {
 #endif
     time_point_t next_tick = time_point_now();
+
+    // Auto-switch model when a receiver powers on during normal
+    // (non-standby) operation.  Only fires when no receiver is
+    // connected; rate-limited to once every 30 seconds.
+    tryAutoSwitchModel();
+
     DEBUG_TIMER_START(debugTimerPerMain);
 #if defined(COLORLCD) && defined(CLI)
     if (perMainEnabled) {
