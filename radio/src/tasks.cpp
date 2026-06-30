@@ -103,7 +103,7 @@ static void menusTask()
 
       // Every 2 seconds: briefly restart mixer to sniff for receiver
       tmr10ms_t now = get_tmr10ms();
-      if ((now - last_standby_poll) > 200) {  // 200 * 10ms = 2s
+      if ((now - last_standby_poll) > 1000) {  // 1000 * 10ms = 10s
         last_standby_poll = now;
         mixerTaskStart();   // Start sending pulses
         sleep_ms(50);       // Wait for module TX + RX response
