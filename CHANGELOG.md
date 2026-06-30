@@ -55,7 +55,7 @@ the matching model. Works in **both standby and normal operation**:
 **Trigger conditions** (must ALL be true):
 - No receiver currently connected (`TELEMETRY_STREAMING()` is false)
 - At least 5 seconds since boot
-- At least 30 seconds since the last probe attempt
+- At least **10 seconds** since the last probe attempt
 
 **How it works:**
 
