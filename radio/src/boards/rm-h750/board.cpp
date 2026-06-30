@@ -247,3 +247,33 @@ void boardOff()
 
   }
 }
+
+extern "C" void SystemClock_Config(void);
+extern RTC_HandleTypeDef rtc;
+
+void boardEnterStandby()
+{
+  lcdOff();
+
+  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+  HAL_RTCEx_SetWakeUpTimer_IT(&rtc, 1, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+
+  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+
+  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+}
+
+void boardResumeFromStandby()
+{
+  SystemClock_Config();
+  SystemCoreClock = 480000000;
+
+  HAL_SYSTICK_Config(SystemCoreClock / 1000);
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+
+  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+}
