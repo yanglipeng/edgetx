@@ -69,6 +69,7 @@ static void menusTask()
   // Standby state — persists across loop iterations
   static bool standby_prepared = false;
   static tmr10ms_t standby_start_time = 0;
+  static tmr10ms_t last_standby_poll = 0;
 
   while (task_running()) {
     uint32_t pwr_check = pwrCheck();
@@ -78,6 +79,7 @@ static void menusTask()
       if (standby_prepared) {
         // Power button pressed during standby — wake up, don't reset
         standby_prepared = false;
+        mixerTaskStart();  // Resume mixer
         inactivityTimerReset(ActivitySource::Keys);
         continue;
       }
@@ -87,32 +89,41 @@ static void menusTask()
       if (!standby_prepared) {
         // First entry: flush storage
         storageCheck(false);
-        // NOTE: mixer keeps running so the RF module keeps transmitting.
-        // Without module TX, the receiver won't respond and telemetry
-        // auto-wake cannot work.
+        // Stop mixer to save RF module power.
+        // Every 2s we briefly restart it to sniff for receiver.
+        mixerTaskStop();
         standby_prepared = true;
         standby_start_time = get_tmr10ms();
+        last_standby_poll = 0;
       }
 
-      // Light sleep: backlight/LEDs off, CPU enters WFI.
-      // SysTick stays enabled so FreeRTOS timers keep firing:
-      //   - 2ms telemetry timer → telemetryWakeup() processes data
-      //   - Mixer task sends pulses → module stays active
       boardEnterStandby();
       boardResumeFromStandby();
+      WDG_RESET();  // Feed watchdog (mixer stopped, cannot feed itself)
 
-      // Process pending telemetry (data buffered by UART DMA during WFI)
-      telemetryWakeup();
+      // Every 2 seconds: briefly restart mixer to sniff for receiver
+      tmr10ms_t now = get_tmr10ms();
+      if ((now - last_standby_poll) > 200) {  // 200 * 10ms = 2s
+        last_standby_poll = now;
+        mixerTaskStart();   // Start sending pulses
+        sleep_ms(50);       // Wait for module TX + RX response
+        telemetryWakeup();  // Process telemetry response
+        mixerTaskStop();    // Stop to save power
+      }
 
       // 1. Receiver connected → telemetry detected → wake up
       if (TELEMETRY_STREAMING()) {
+        mixerTaskStart();   // Keep mixer running for normal operation
         standby_prepared = false;
         inactivityTimerReset(ActivitySource::Keys);
-        continue;  // next pwrCheck() returns e_power_on (counter reset)
+        continue;
       }
 
-      // 2. Stick or switch moved → wake up
+      // 2. Stick / switch / IMU movement → wake up
+      //    ADC(DMA) keeps sampling, IMU is polled by mixer task even
+      //    when _mixer_running=false, switch GPIO works independently.
       if (inactivityCheckInputs()) {
+        mixerTaskStart();
         standby_prepared = false;
         inactivityTimerReset(ActivitySource::Keys);
         continue;
