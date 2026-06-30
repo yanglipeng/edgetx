@@ -28,6 +28,7 @@
 #include "timers_driver.h"
 #include "hal/abnormal_reboot.h"
 #include "hal/watchdog_driver.h"
+#include "inactivity_timer.h"
 #include "pdm_wav_recorder.h"
 
 #include "tasks.h"
@@ -78,7 +79,9 @@ static void menusTask()
         // Power button pressed during standby — save and reboot
         storageCheck(false);
         standby_prepared = false;
+#if !defined(SIMU)
         NVIC_SystemReset();
+#endif
       }
       sleep_ms(MENU_TASK_PERIOD);
       continue;
@@ -100,10 +103,25 @@ static void menusTask()
       boardEnterStandby();
       boardResumeFromStandby();
 
+      // Woken by interrupt — check wake conditions:
+      // 1. Receiver connected (telemetry data detected in ISR)
+      // 2. Stick or switch moved (ADC/GPIO sampled in ISR context)
+      // 3. Power button pressed (handled via pwrCheck on next iteration)
       if (TELEMETRY_STREAMING()) {
         // Receiver connected! Save state and reboot to resume.
         standby_prepared = false;
+#if !defined(SIMU)
         NVIC_SystemReset();
+#endif
+      }
+
+      if (inactivityCheckInputs()) {
+        // Stick or switch moved — wake up
+        standby_prepared = false;
+        inactivityTimerReset(ActivitySource::Keys);
+#if !defined(SIMU)
+        NVIC_SystemReset();
+#endif
       }
 
       // Safety shutdown after ~30 minutes
