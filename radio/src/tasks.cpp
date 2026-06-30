@@ -65,48 +65,56 @@ static void menusTask()
 #endif
 
 #if defined(PWR_BUTTON_PRESS)
+  // Standby state — persists across loop iterations
+  static bool standby_prepared = false;
+  static tmr10ms_t standby_start_time = 0;
+
   while (task_running()) {
     uint32_t pwr_check = pwrCheck();
     if (pwr_check == e_power_off) {
       break;
     } else if (pwr_check == e_power_press) {
+      if (standby_prepared) {
+        // Power button pressed during standby — save and reboot
+        storageCheck(false);
+        standby_prepared = false;
+        NVIC_SystemReset();
+      }
       sleep_ms(MENU_TASK_PERIOD);
       continue;
     } else if (pwr_check == e_power_standby) {
-      static bool standby_prepared = false;
-      static uint16_t standby_cycles = 0;
-
       if (!standby_prepared) {
         // First entry: flush storage, stop mixer, keep modules powered
         storageCheck(false);
         mixerTaskStop();
-        telemetryStop();
+        // Telemetry keeps running — ISRs process incoming data and
+        // set telemetryStreaming when a receiver reconnects.
         standby_prepared = true;
-        standby_cycles = 0;
+        standby_start_time = get_tmr10ms();
       }
 
-      // Enter STOP with RTC wakeup ~2s
+      // Enter SLEEP mode (WFI, not STOP).
+      // CPU stops; all peripherals (UART, DMA, timers, LCD) keep running.
+      // Telemetry data continues to be received and processed in ISRs.
+      // Any interrupt (telemetry timer 2ms, UART RX, GPIO, RTC) wakes CPU.
       boardEnterStandby();
-
-      // Woke up: restore clocks, check condition
       boardResumeFromStandby();
 
       if (TELEMETRY_STREAMING()) {
-        // Receiver connected! Resume normal operation
+        // Receiver connected! Save state and reboot to resume.
         standby_prepared = false;
-        telemetryStart();
-        mixerTaskStart();
-        continue;
+        NVIC_SystemReset();
       }
 
-      // Safety shutdown after ~4 hours (7200 cycles x 2s)
-      if (++standby_cycles > 7200) {
+      // Safety shutdown after ~30 minutes
+      if ((get_tmr10ms() - standby_start_time) > 60u * 100u * 30u) {
         standby_prepared = false;
         break;  // exit -> full boardOff()
       }
 
       continue;
     }
+    // e_power_on: idle cycle — loop back to pwrCheck()
 #else
   while (pwrCheck() != e_power_off) {
 #endif

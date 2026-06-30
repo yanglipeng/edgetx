@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeTX 仪表盘字体预览</title>
+<style>
+  @font-face { font-family: 'DSEG7'; src: url('radio/src/fonts/DSEG14/DSEG7Classic-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'DSEG7 Bold'; src: url('radio/src/fonts/DSEG14/DSEG7Classic-Bold.ttf') format('truetype'); }
+  @font-face { font-family: 'DSEG14'; src: url('radio/src/fonts/DSEG14/DSEG14Classic-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'DSEG14 Bold'; src: url('radio/src/fonts/DSEG14/DSEG14Classic-Bold.ttf') format('truetype'); }
+  @font-face { font-family: 'VT323'; src: url('radio/src/fonts/VT323/VT323-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'ShareTechMono'; src: url('radio/src/fonts/ShareTechMono/ShareTechMono-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'FiraSans'; src: url('radio/src/fonts/FiraSans/FiraSans-Regular.ttf') format('truetype'); }
+  @font-face { font-family: 'FiraSans Bold'; src: url('radio/src/fonts/FiraSans/FiraSans-Bold.ttf') format('truetype'); }
+  @font-face { font-family: 'Orbitron'; src: url('radio/src/fonts/Orbitron/Orbitron-Variable.ttf') format('truetype'); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; color: #e0e0e0; font-family: sans-serif; padding: 40px; }
+  h1 { font-size: 24px; margin-bottom: 8px; color: #fff; }
+  .subtitle { color: #888; margin-bottom: 40px; font-size: 14px; }
+  .section { margin-bottom: 50px; }
+  .section-title { font-size: 18px; font-weight: 600; color: #4fc3f7; border-bottom: 1px solid #1a1a2e; padding-bottom: 8px; margin-bottom: 20px; }
+  .font-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 24px; }
+  .font-card { background: #111120; border: 1px solid #1e1e3a; border-radius: 12px; padding: 24px; }
+  .font-card:hover { border-color: #4fc3f7; }
+  .font-name { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .font-desc { font-size: 12px; color: #555; margin-bottom: 16px; }
+  .sample-area { background: #0a0a14; border-radius: 8px; padding: 16px; margin-bottom: 8px; }
+  .sample-line { display: flex; align-items: baseline; gap: 12px; }
+  .sample-label { font-size: 11px; color: #555; min-width: 36px; text-align: right; font-family: sans-serif; }
+  .dseg7-digits { color: #ff4444; }  /* 红色调模拟仪表盘 */
+  .dseg7-digits.alt { color: #44ff44; } /* 绿色调 */
+  .dseg7-digits.blue { color: #4488ff; } /* 蓝色调 */
+  .dark-bg { background: #050510; }
+  .instrument-panel { background: #08081a; border: 1px solid #1a1a3a; border-radius: 16px; padding: 32px; margin-top: 20px; }
+  .instrument-panel h3 { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+  .panel-row { display: flex; gap: 40px; flex-wrap: wrap; margin-bottom: 20px; }
+  .panel-gauge { }
+  .panel-gauge .label { font-size: 11px; color: #555; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<h1>EdgeTX 直升机仪表盘字体预览</h1>
+<p class="subtitle">已集成: DSEG7 (6 个变体) · 可选备用字体: DSEG14, VT323, ShareTechMono, FiraSans, Orbitron</p>
+
+<!-- ======================================== -->
+<div class="section">
+  <div class="section-title">DSEG7 — 7段数码管 (已集成到固件)</div>
+  <div class="font-grid">
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic 32px</div>
+      <div class="font-desc">Lua: DSEG7_32 · 中号仪表（电压、计时器）</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">32</span><span style="font-family:'DSEG7';font-size:32px" class="dseg7-digits">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">32</span><span style="font-family:'DSEG7';font-size:32px" class="dseg7-digits alt">4.20V 00:12</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic 48px</div>
+      <div class="font-desc">Lua: DSEG7_48 · 大号仪表（高度、速度）</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'DSEG7';font-size:48px" class="dseg7-digits">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'DSEG7';font-size:48px" class="dseg7-digits blue">ALT 1250M</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic 64px</div>
+      <div class="font-desc">Lua: DSEG7_64 · 超大号（主告警）</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">64</span><span style="font-family:'DSEG7';font-size:64px;line-height:1.1" class="dseg7-digits">01234</span></div>
+        <div class="sample-line"><span class="sample-label">64</span><span style="font-family:'DSEG7';font-size:64px;line-height:1.1" class="dseg7-digits alt">WARN</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="font-grid" style="margin-top:24px">
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic Bold 32px</div>
+      <div class="font-desc">Lua: DSEG7_BOLD_32 · 中号粗体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">32B</span><span style="font-family:'DSEG7 Bold';font-size:32px" class="dseg7-digits">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">32B</span><span style="font-family:'DSEG7 Bold';font-size:32px" class="dseg7-digits alt">4.20V</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic Bold 48px</div>
+      <div class="font-desc">Lua: DSEG7_BOLD_48 · 大号粗体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">48B</span><span style="font-family:'DSEG7 Bold';font-size:48px" class="dseg7-digits">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">48B</span><span style="font-family:'DSEG7 Bold';font-size:48px" class="dseg7-digits blue">RPM 3200</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">DSEG7 Classic Bold 64px</div>
+      <div class="font-desc">Lua: DSEG7_BOLD_64 · 超大粗体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">64B</span><span style="font-family:'DSEG7 Bold';font-size:64px;line-height:1.1" class="dseg7-digits">01234</span></div>
+        <div class="sample-line"><span class="sample-label">64B</span><span style="font-family:'DSEG7 Bold';font-size:64px;line-height:1.1" class="dseg7-digits alt">ALERT</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<div class="section">
+  <div class="section-title">DSEG14 — 14段数码管（可选）</div>
+  <p style="color:#666;font-size:13px;margin-bottom:16px">比 DSEG7 更精细的笔划，可显示更复杂的字符形状</p>
+  <div class="font-grid">
+    <div class="font-card">
+      <div class="font-name">DSEG14 Classic Regular</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">32</span><span style="font-family:'DSEG14';font-size:32px;color:#ff6644">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'DSEG14';font-size:48px;color:#ff6644">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">64</span><span style="font-family:'DSEG14';font-size:64px;line-height:1.1;color:#ff6644">01234</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">DSEG14 Classic Bold</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">32</span><span style="font-family:'DSEG14 Bold';font-size:32px;color:#ff6644">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'DSEG14 Bold';font-size:48px;color:#ff6644">0123456789</span></div>
+        <div class="sample-line"><span class="sample-label">64</span><span style="font-family:'DSEG14 Bold';font-size:64px;line-height:1.1;color:#ff6644">01234</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<div class="section">
+  <div class="section-title">其他候选仪表字体（可选）</div>
+  <div class="font-grid">
+    <div class="font-card">
+      <div class="font-name">VT323</div>
+      <div class="font-desc">复古像素终端风格</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">28</span><span style="font-family:'VT323';font-size:28px;color:#33ff33">0123456789 ABCDEF abcdef</span></div>
+        <div class="sample-line"><span class="sample-label">36</span><span style="font-family:'VT323';font-size:36px;color:#33ff33">Altitude: 1250m</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'VT323';font-size:48px;color:#33ff33">RPM 3200</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">Share Tech Mono</div>
+      <div class="font-desc">科技感等宽字体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">28</span><span style="font-family:'ShareTechMono';font-size:28px;color:#88ccff">0123456789 ABCDEF</span></div>
+        <div class="sample-line"><span class="sample-label">36</span><span style="font-family:'ShareTechMono';font-size:36px;color:#88ccff">Speed: 125 km/h</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'ShareTechMono';font-size:48px;color:#88ccff">4.20V 00:12</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">Orbitron</div>
+      <div class="font-desc">未来科技感字体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">28</span><span style="font-family:'Orbitron';font-size:28px;color:#ff88cc">0123456789 ABCDEF</span></div>
+        <div class="sample-line"><span class="sample-label">36</span><span style="font-family:'Orbitron';font-size:36px;color:#ff88cc">ALT 1250 RPM 3200</span></div>
+        <div class="sample-line"><span class="sample-label">48</span><span style="font-family:'Orbitron';font-size:48px;color:#ff88cc">WARNING</span></div>
+      </div>
+    </div>
+    <div class="font-card">
+      <div class="font-name">Fira Sans</div>
+      <div class="font-desc">干净现代的无衬线体</div>
+      <div class="sample-area">
+        <div class="sample-line"><span class="sample-label">28</span><span style="font-family:'FiraSans';font-size:28px;color:#dddddd">0123456789 ABCDEF abcdef</span></div>
+        <div class="sample-line"><span class="sample-label">Bold</span><span style="font-family:'FiraSans Bold';font-size:28px;color:#dddddd">0123456789 ABCDEF abcdef</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<div class="section">
+  <div class="section-title">模拟仪表盘组合</div>
+  <div class="instrument-panel">
+    <h3>直升机仪表盘 (模拟效果)</h3>
+    <div class="panel-row">
+      <div class="panel-gauge">
+        <div class="label">高度 (DSEG7 64)</div>
+        <div style="font-family:'DSEG7';font-size:64px;line-height:1;color:#ff4444">1250</div>
+      </div>
+      <div class="panel-gauge">
+        <div class="label">速度 (DSEG7 48)</div>
+        <div style="font-family:'DSEG7';font-size:48px;line-height:1;color:#44ff44">185</div>
+      </div>
+      <div class="panel-gauge">
+        <div class="label">电压 (DSEG7 32)</div>
+        <div style="font-family:'DSEG7';font-size:32px;line-height:1;color:#4488ff">4.20V</div>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="panel-gauge">
+        <div class="label">N/A (DSEG14 48)</div>
+        <div style="font-family:'DSEG14';font-size:48px;line-height:1;color:#ff6644">01234</div>
+      </div>
+      <div class="panel-gauge">
+        <div class="label">VT323 复古风格</div>
+        <div style="font-family:'VT323';font-size:42px;line-height:1;color:#33ff33">ALT 1250m</div>
+      </div>
+      <div class="panel-gauge">
+        <div class="label">Orbitron 科技感</div>
+        <div style="font-family:'Orbitron';font-size:36px;line-height:1;color:#ff88cc">WARNING</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

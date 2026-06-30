@@ -199,7 +199,7 @@ void telemetryStart()
 
 void telemetryStop()
 {
-  if (!timer_is_created(&telemetryTimer)) {
+  if (timer_is_created(&telemetryTimer)) {
     timer_stop(&telemetryTimer);
   }
 }

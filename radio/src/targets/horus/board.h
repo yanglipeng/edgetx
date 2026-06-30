@@ -205,6 +205,7 @@ void lcdCopy(void * dest, void * src);
 
 
 #define lcdOff()              backlightEnable(0) /* just disable the backlight */
+#define lcdOn()               backlightFullOn()  /* restore backlight */
 
 #define lcdRefreshWait(...)
 

@@ -323,8 +323,7 @@ void boardEnterStandby()
 
   backlightEnable(0);
 
-  // Extend watchdog timeout to cover ~2s RTC sleep period.
-  // IWDG keeps running in STOP mode (clocked by LSI).
+  // Extend watchdog timeout to cover the sleep period.
   // Max prescaler (256) + max reload (4095) gives ~32s timeout.
   LL_IWDG_EnableWriteAccess(IWDG);
   LL_IWDG_SetPrescaler(IWDG, LL_IWDG_PRESCALER_256);
@@ -332,35 +331,21 @@ void boardEnterStandby()
   LL_IWDG_SetReloadCounter(IWDG, 4095);
   LL_IWDG_ReloadCounter(IWDG);
 
-  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
-  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-
-  // RTC wakeup timer: ck_spre ~1Hz, WUT = 1 => ~2s interval
-  HAL_RTCEx_SetWakeUpTimer_IT(&rtc, 1, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
-
-  // Disable SysTick interrupt during sleep
+  // Enter SLEEP mode (not STOP) — CPU stops, all peripherals run.
+  // UART/DMA continues receiving telemetry, LCD keeps its state,
+  // telemetry timer and other interrupts wake the CPU as needed.
   SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
-
-  // Enter STOP mode (will be woken by RTC wakeup ~2s later)
-  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-
-  // Execution resumes here after wakeup
+  CLEAR_BIT(SCB->SCR, SCB_SCR_SLEEPDEEP_Msk);
+  __WFI();
 }
 
 void boardResumeFromStandby()
 {
-  // Restore PLL from HSI (HAL_PWR_EnterSTOPMode disables PLL)
-  SystemClock_Config();
-  SystemCoreClock = 168000000;
+  // SLEEP mode preserves all clock and peripheral state.
+  // Just re-enable SysTick and restore watchdog timeout.
 
-  // Re-init SysTick for 1ms
-  HAL_SYSTICK_Config(SystemCoreClock / 1000);
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+  lcdOn();  // Restore backlight (was turned off in boardEnterStandby)
   SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
-
-  // Deactivate RTC wakeup
-  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
-  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
   // Restore original watchdog timeout (500ms)
   LL_IWDG_EnableWriteAccess(IWDG);
