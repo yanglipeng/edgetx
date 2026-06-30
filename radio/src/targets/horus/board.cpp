@@ -344,7 +344,6 @@ void boardResumeFromStandby()
   // SLEEP mode preserves all clock and peripheral state.
   // Just re-enable SysTick and restore watchdog timeout.
 
-  lcdOn();  // Restore backlight (was turned off in boardEnterStandby)
   SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
 
   // Restore original watchdog timeout (500ms)
