@@ -323,6 +323,15 @@ void boardEnterStandby()
 
   backlightEnable(0);
 
+  // Extend watchdog timeout to cover ~2s RTC sleep period.
+  // IWDG keeps running in STOP mode (clocked by LSI).
+  // Max prescaler (256) + max reload (4095) gives ~32s timeout.
+  LL_IWDG_EnableWriteAccess(IWDG);
+  LL_IWDG_SetPrescaler(IWDG, LL_IWDG_PRESCALER_256);
+  LL_IWDG_EnableWriteAccess(IWDG);
+  LL_IWDG_SetReloadCounter(IWDG, 4095);
+  LL_IWDG_ReloadCounter(IWDG);
+
   HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
@@ -352,6 +361,13 @@ void boardResumeFromStandby()
   // Deactivate RTC wakeup
   HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+  // Restore original watchdog timeout (500ms)
+  LL_IWDG_EnableWriteAccess(IWDG);
+  LL_IWDG_SetPrescaler(IWDG, LL_IWDG_PRESCALER_32);
+  LL_IWDG_EnableWriteAccess(IWDG);
+  LL_IWDG_SetReloadCounter(IWDG, WDG_DURATION);
+  LL_IWDG_ReloadCounter(IWDG);
 }
 
 bool isBacklightEnabled()

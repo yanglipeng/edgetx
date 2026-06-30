@@ -40,6 +40,7 @@
 #include "hal/switch_driver.h"
 #include "hal/abnormal_reboot.h"
 #include "hal/watchdog_driver.h"
+#include "stm32_hal_ll.h"
 #include "hal/usb_driver.h"
 #include "hal/gpio.h"
 #include "hal/rgbleds.h"
@@ -255,6 +256,15 @@ void boardEnterStandby()
 {
   lcdOff();
 
+  // Extend watchdog timeout to cover ~2s RTC sleep period.
+  // IWDG keeps running in STOP mode (clocked by LSI).
+  // Max prescaler (256) + max reload (4095) gives ~32s timeout.
+  LL_IWDG_EnableWriteAccess(IWDG1);
+  LL_IWDG_SetPrescaler(IWDG1, LL_IWDG_PRESCALER_256);
+  LL_IWDG_EnableWriteAccess(IWDG1);
+  LL_IWDG_SetReloadCounter(IWDG1, 4095);
+  LL_IWDG_ReloadCounter(IWDG1);
+
   HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
@@ -276,4 +286,11 @@ void boardResumeFromStandby()
 
   HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
   __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+  // Restore original watchdog timeout (500ms)
+  LL_IWDG_EnableWriteAccess(IWDG1);
+  LL_IWDG_SetPrescaler(IWDG1, LL_IWDG_PRESCALER_32);
+  LL_IWDG_EnableWriteAccess(IWDG1);
+  LL_IWDG_SetReloadCounter(IWDG1, WDG_DURATION);
+  LL_IWDG_ReloadCounter(IWDG1);
 }
