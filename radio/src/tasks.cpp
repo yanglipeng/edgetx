@@ -267,18 +267,29 @@ static void menusTask()
           sleep_ms(50);
         }
 
+        // Phase 2: Probe model IDs from the model list.
+        // ALWAYS runs — even when telemetry is already flowing.
+        //
+        // With ELRS Model Match:
+        //   - Wrong modelId → no telemetry → probe finds the right one
+        //   - Right modelId → telemetry flowing → probe finds no better
+        //     match, restores original modelId, returns false → but
+        //     telemetry resumes after restore → wake up below.
+        // Without Model Match:
+        //   - Telemetry keeps flowing for any modelId → probe can't
+        //     identify receiver → returns false → wake up on current.
+        tryProbeModelIds();
+
+        // After probing, the original modelId may have been restored
+        // and the receiver needs a moment to reconnect.
+        for (int i = 0; i < 10; i++) {
+          telemetryWakeup();
+          if (TELEMETRY_STREAMING()) break;
+          sleep_ms(50);
+        }
+
         if (!TELEMETRY_STREAMING()) {
-          // Phase 2: Probe model IDs from other models in the list.
-          // Needed for CRSF/ELRS with Model Match: if current modelId
-          // doesn't match the receiver, telemetry stays silent even
-          // though a receiver is present.  We try each unique modelId
-          // from modelslist to find one that connects.
-          if (tryProbeModelIds()) {
-            // A matching model was loaded and mixer restarted.
-            // Fall through to wake-up below.
-          } else {
-            mixerTaskStop();
-          }
+          mixerTaskStop();
         }
       }
 
