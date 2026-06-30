@@ -90,7 +90,7 @@ static void menusTask()
         // First entry: flush storage
         storageCheck(false);
         // Stop mixer to save RF module power.
-        // Every 2s we briefly restart it to sniff for receiver.
+        // Every 10s we restart it to sniff for receiver.
         mixerTaskStop();
         standby_prepared = true;
         standby_start_time = get_tmr10ms();
@@ -101,14 +101,26 @@ static void menusTask()
       boardResumeFromStandby();
       WDG_RESET();  // Feed watchdog (mixer stopped, cannot feed itself)
 
-      // Every 2 seconds: briefly restart mixer to sniff for receiver
+      // Every 10 seconds: restart mixer and sniff for receiver.
+      // Keep the mixer running for up to 2 seconds so the RF protocol
+      // has time to re-establish the link (frequency-hopping sync,
+      // receiver boot, protocol handshake, etc.).
+      // Check telemetry every 50ms and break out as soon as we detect it.
       tmr10ms_t now = get_tmr10ms();
       if ((now - last_standby_poll) > 1000) {  // 1000 * 10ms = 10s
         last_standby_poll = now;
-        mixerTaskStart();   // Start sending pulses
-        sleep_ms(50);       // Wait for module TX + RX response
-        telemetryWakeup();  // Process telemetry response
-        mixerTaskStop();    // Stop to save power
+        mixerTaskStart();
+
+        // Sniff loop: up to 40 × 50ms = 2000ms
+        for (int i = 0; i < 40; i++) {
+          telemetryWakeup();
+          if (TELEMETRY_STREAMING()) break;
+          sleep_ms(50);
+        }
+
+        if (!TELEMETRY_STREAMING()) {
+          mixerTaskStop();
+        }
       }
 
       // 1. Receiver connected → telemetry detected → wake up
