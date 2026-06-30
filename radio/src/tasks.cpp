@@ -187,16 +187,17 @@ static void tryAutoSwitchModel()
   // Don't probe while a receiver is connected
   if (TELEMETRY_STREAMING()) return;
 
-  // Rate-limit: probe every ~10 seconds for quick receiver detection.
+  tmr10ms_t now = get_tmr10ms();
+
+  // Wait for things to settle after boot (5 seconds)
+  if (now < 500) return;
+
+  // Rate-limit: probe at most once every 10 seconds.
   // During a probe we briefly change modelId (300ms per model); the
   // user does not notice this when no receiver is connected.
   static tmr10ms_t lastProbe = 0;
-  tmr10ms_t now = get_tmr10ms();
   if ((now - lastProbe) < 1000) return;  // 1000 * 10ms = 10s
   lastProbe = now;
-
-  // Wait for things to settle after boot
-  if (now < 500) return;  // 5 seconds after power-on
 
   tryProbeModelIds();
 #endif
