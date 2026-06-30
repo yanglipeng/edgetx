@@ -27,4 +27,5 @@ enum PowerState {
   e_power_usb,
   e_power_off,
   e_power_press,
+  e_power_standby,   // standby mode: peripherals off, RF modules stay powered
 };

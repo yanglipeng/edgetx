@@ -1779,13 +1779,23 @@ uint32_t pwrCheck()
   static uint8_t pwr_check_state = PWR_CHECK_ON;
 
   bool inactivityShutdown = pwrOffDueToInactivity();
-  
+
+  // Inactivity + no receiver -> standby (not full shutdown)
+  // Skip if user is pressing the power button
+  if (inactivityShutdown && !pwrPressed()) {
+#if defined(COLORLCD)
+    cancelShutdownAnimation();
+#endif
+    pwr_check_state = PWR_CHECK_ON;
+    pwr_press_time = 0;
+    return e_power_standby;
+  }
+
   if (pwr_check_state == PWR_CHECK_OFF) {
     return e_power_off;
   }
-  else if (pwrPressed() || inactivityShutdown) {
-    if (!inactivityShutdown)
-      inactivityTimerReset(ActivitySource::Keys);
+  else if (pwrPressed()) {
+    inactivityTimerReset(ActivitySource::Keys);
 
     if (TELEMETRY_STREAMING()) {
       message = STR_MODEL_STILL_POWERED;
