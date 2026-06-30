@@ -71,6 +71,40 @@ static void menusTask()
     } else if (pwr_check == e_power_press) {
       sleep_ms(MENU_TASK_PERIOD);
       continue;
+    } else if (pwr_check == e_power_standby) {
+      static bool standby_prepared = false;
+      static uint16_t standby_cycles = 0;
+
+      if (!standby_prepared) {
+        // First entry: flush storage, stop mixer, keep modules powered
+        storageCheck(false);
+        mixerTaskStop();
+        telemetryStop();
+        standby_prepared = true;
+        standby_cycles = 0;
+      }
+
+      // Enter STOP with RTC wakeup ~2s
+      boardEnterStandby();
+
+      // Woke up: restore clocks, check condition
+      boardResumeFromStandby();
+
+      if (TELEMETRY_STREAMING()) {
+        // Receiver connected! Resume normal operation
+        standby_prepared = false;
+        telemetryStart();
+        mixerTaskStart();
+        continue;
+      }
+
+      // Safety shutdown after ~4 hours (7200 cycles x 2s)
+      if (++standby_cycles > 7200) {
+        standby_prepared = false;
+        break;  // exit -> full boardOff()
+      }
+
+      continue;
     }
 #else
   while (pwrCheck() != e_power_off) {

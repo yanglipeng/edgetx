@@ -68,6 +68,8 @@ extern uint16_t sessionTimer;
 // Board driver
 void boardInit();
 void boardOff();
+void boardEnterStandby();
+void boardResumeFromStandby();
 
 // PCBREV driver
 enum {

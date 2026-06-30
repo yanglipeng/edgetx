@@ -303,6 +303,48 @@ void boardOff()
   }
 }
 
+extern "C" void SystemClock_Config(void);
+extern RTC_HandleTypeDef rtc;
+
+void boardEnterStandby()
+{
+#if defined(STATUS_LEDS) && !defined(BOOT)
+  ledOff();
+#endif
+
+  backlightEnable(0);
+
+  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+  // RTC wakeup timer: ck_spre ~1Hz, WUT = 1 => ~2s interval
+  HAL_RTCEx_SetWakeUpTimer_IT(&rtc, 1, RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+
+  // Disable SysTick interrupt during sleep
+  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+
+  // Enter STOP mode (will be woken by RTC wakeup ~2s later)
+  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+
+  // Execution resumes here after wakeup
+}
+
+void boardResumeFromStandby()
+{
+  // Restore PLL from HSI (HAL_PWR_EnterSTOPMode disables PLL)
+  SystemClock_Config();
+  SystemCoreClock = 168000000;
+
+  // Re-init SysTick for 1ms
+  HAL_SYSTICK_Config(SystemCoreClock / 1000);
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+
+  // Deactivate RTC wakeup
+  HAL_RTCEx_DeactivateWakeUpTimer(&rtc);
+  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+}
+
 bool isBacklightEnabled()
 {
   return boardBacklightOn;
