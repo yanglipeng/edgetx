@@ -76,62 +76,52 @@ static void menusTask()
       break;
     } else if (pwr_check == e_power_press) {
       if (standby_prepared) {
-        // Power button pressed during standby — save and reboot
-        storageCheck(false);
+        // Power button pressed during standby — wake up, don't reset
         standby_prepared = false;
-#if !defined(SIMU)
-        NVIC_SystemReset();
-#endif
+        inactivityTimerReset(ActivitySource::Keys);
+        continue;
       }
       sleep_ms(MENU_TASK_PERIOD);
       continue;
     } else if (pwr_check == e_power_standby) {
       if (!standby_prepared) {
-        // First entry: flush storage, stop mixer, keep modules powered
+        // First entry: flush storage
         storageCheck(false);
-        mixerTaskStop();
-        // Telemetry keeps running — ISRs process incoming data and
-        // set telemetryStreaming when a receiver reconnects.
+        // NOTE: mixer keeps running so the RF module keeps transmitting.
+        // Without module TX, the receiver won't respond and telemetry
+        // auto-wake cannot work.
         standby_prepared = true;
         standby_start_time = get_tmr10ms();
       }
 
-      // Enter SLEEP mode (WFI, not STOP).
-      // CPU stops; all peripherals (UART, DMA, timers, LCD) keep running.
-      // Telemetry timer keeps firing every 2ms, waking CPU to process data.
-      // Any interrupt (telemetry timer 2ms, UART RX, GPIO, RTC) wakes CPU.
+      // Light sleep: backlight/LEDs off, CPU enters WFI.
+      // SysTick stays enabled so FreeRTOS timers keep firing:
+      //   - 2ms telemetry timer → telemetryWakeup() processes data
+      //   - Mixer task sends pulses → module stays active
       boardEnterStandby();
       boardResumeFromStandby();
 
-      // Process any pending telemetry data in main loop context.
-      // UART DMA was running during WFI, buffering received bytes.
+      // Process pending telemetry (data buffered by UART DMA during WFI)
       telemetryWakeup();
 
-      // Woken by interrupt — check wake conditions:
-      // 1. Receiver connected (telemetry data detected)
-      // 2. Stick or switch moved (ADC/GPIO sampled)
-      // 3. Power button pressed (handled via pwrCheck on next iteration)
+      // 1. Receiver connected → telemetry detected → wake up
       if (TELEMETRY_STREAMING()) {
-        // Receiver connected! Save state and reboot to resume.
-        standby_prepared = false;
-#if !defined(SIMU)
-        NVIC_SystemReset();
-#endif
-      }
-
-      if (inactivityCheckInputs()) {
-        // Stick or switch moved — wake up
         standby_prepared = false;
         inactivityTimerReset(ActivitySource::Keys);
-#if !defined(SIMU)
-        NVIC_SystemReset();
-#endif
+        continue;  // next pwrCheck() returns e_power_on (counter reset)
       }
 
-      // Safety shutdown after ~30 minutes
-      if ((get_tmr10ms() - standby_start_time) > 60u * 100u * 30u) {
+      // 2. Stick or switch moved → wake up
+      if (inactivityCheckInputs()) {
         standby_prepared = false;
-        break;  // exit -> full boardOff()
+        inactivityTimerReset(ActivitySource::Keys);
+        continue;
+      }
+
+      // Safety shutdown after ~2 hours of standby
+      if ((get_tmr10ms() - standby_start_time) > 60u * 100u * 120u) {
+        standby_prepared = false;
+        break;
       }
 
       continue;

@@ -256,34 +256,14 @@ void boardEnterStandby()
 {
   lcdOff();
 
-  // Extend watchdog timeout to cover the sleep period.
-  // Max prescaler (256) + max reload (4095) gives ~32s timeout.
-  LL_IWDG_EnableWriteAccess(IWDG1);
-  LL_IWDG_SetPrescaler(IWDG1, LL_IWDG_PRESCALER_256);
-  LL_IWDG_EnableWriteAccess(IWDG1);
-  LL_IWDG_SetReloadCounter(IWDG1, 4095);
-  LL_IWDG_ReloadCounter(IWDG1);
-
-  // Enter SLEEP mode (not STOP) — CPU stops, all peripherals run.
-  // In SLEEP mode, LCD, UART/DMA, timers all keep running,
-  // so telemetry continues to be received and processed in ISRs.
-  // Any interrupt (telemetry timer, UART, RTC, GPIO) wakes the CPU.
-  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+  // Enter SLEEP mode (not STOP) via WFI.
+  // SysTick stays enabled — FreeRTOS timers and mixer keep running,
+  // so the RF module stays active and telemetry is processed normally.
   CLEAR_BIT(SCB->SCR, SCB_SCR_SLEEPDEEP_Msk);
   __WFI();
 }
 
 void boardResumeFromStandby()
 {
-  // SLEEP mode preserves all clock and peripheral state.
-  // Just re-enable SysTick and restore watchdog timeout.
-
-  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
-
-  // Restore original watchdog timeout (500ms)
-  LL_IWDG_EnableWriteAccess(IWDG1);
-  LL_IWDG_SetPrescaler(IWDG1, LL_IWDG_PRESCALER_32);
-  LL_IWDG_EnableWriteAccess(IWDG1);
-  LL_IWDG_SetReloadCounter(IWDG1, WDG_DURATION);
-  LL_IWDG_ReloadCounter(IWDG1);
+  // No-op: SysTick was never disabled, watchdog is fed by mixer task.
 }
