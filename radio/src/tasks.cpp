@@ -80,6 +80,7 @@ static void menusTask()
         // Power button pressed during standby — wake up, don't reset
         standby_prepared = false;
         mixerTaskStart();  // Resume mixer
+        if (!g_eeGeneral.dontPlayHello) AUDIO_HELLO();
         inactivityTimerReset(ActivitySource::Keys);
         continue;
       }
@@ -101,9 +102,9 @@ static void menusTask()
       boardResumeFromStandby();
       WDG_RESET();  // Feed watchdog (mixer stopped, cannot feed itself)
 
-      // Every 10 seconds: restart mixer and sniff for receiver.
+      // Every 5 seconds: restart mixer and sniff for receiver.
       tmr10ms_t now = get_tmr10ms();
-      if ((now - last_standby_poll) > 1000) {  // 1000 * 10ms = 10s
+      if ((now - last_standby_poll) > 500) {  // 500 * 10ms = 5s
         last_standby_poll = now;
         mixerTaskStart();
 
@@ -123,6 +124,7 @@ static void menusTask()
       if (TELEMETRY_STREAMING()) {
         mixerTaskStart();   // Keep mixer running for normal operation
         standby_prepared = false;
+        if (!g_eeGeneral.dontPlayHello) AUDIO_HELLO();
         inactivityTimerReset(ActivitySource::Keys);
         continue;
       }
@@ -131,6 +133,7 @@ static void menusTask()
       if (inactivityCheckInputs()) {
         mixerTaskStart();
         standby_prepared = false;
+        if (!g_eeGeneral.dontPlayHello) AUDIO_HELLO();
         inactivityTimerReset(ActivitySource::Keys);
         continue;
       }
