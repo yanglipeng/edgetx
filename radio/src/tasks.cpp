@@ -33,11 +33,6 @@
 
 #include "tasks.h"
 #include "tasks/mixer_task.h"
-#include "storage/modelslist.h"
-
-#if defined(CROSSFIRE)
-#include "telemetry/crossfire.h"
-#endif
 
 #if defined(COLORLCD)
 #include "startup_shutdown.h"
@@ -58,150 +53,6 @@ mutex_handle_t audioMutex;
 #if defined(COLORLCD) && defined(CLI)
 bool perMainEnabled = true;
 #endif
-
-// ------------------------------------------------------------------
-// Probe model IDs from the model list for CRSF/ELRS modules.
-// Returns true if a matching model was found and loaded.
-// On non-CRSF / non-modelslist targets this is a no-op stub.
-// ------------------------------------------------------------------
-#if defined(CROSSFIRE) && defined(STORAGE_MODELSLIST)
-static bool tryProbeModelIds()
-{
-  for (uint8_t module = 0; module < NUM_MODULES; module++) {
-    if (!isModuleCrossfire(module)) continue;
-
-    uint8_t origId = g_model.header.modelId[module];
-    bool probed[MAX_RXNUM + 1] = {false};
-    probed[origId] = true;  // Already tried by the normal connection
-
-    uint8_t foundId = 0;
-    bool found = false;
-
-    // Collect unique modelIds from modelslist
-    for (auto& cell : modelslist) {
-      if (cell->moduleData[module].type !=
-          g_model.moduleData[module].type)
-        continue;
-
-      uint8_t mid = cell->modelId[module];
-      if (mid > MAX_RXNUM || probed[mid]) continue;
-
-      probed[mid] = true;
-
-      // Trigger module resend first, then set modelId, so the
-      // pulse task never sees the new modelId with the old counter.
-      moduleState[module].counter = CRSF_FRAME_MODELID;
-      g_model.header.modelId[module] = mid;
-
-      // Wait for module to process the new ID and receiver to respond
-      for (int i = 0; i < 6; i++) {
-        telemetryWakeup();
-        if (TELEMETRY_STREAMING()) {
-          foundId = mid;
-          found = true;
-          break;
-        }
-        sleep_ms(50);
-      }
-
-      if (found) break;
-
-      // Restore original for next probe
-      moduleState[module].counter = CRSF_FRAME_MODELID;
-      g_model.header.modelId[module] = origId;
-      sleep_ms(80);  // Let restore take effect
-    }
-
-    if (!found) {
-      g_model.header.modelId[module] = origId;
-      continue;
-    }
-
-    // Find the full model in modelslist by modelId
-    for (auto& cell : modelslist) {
-      if (cell->moduleData[module].type !=
-          g_model.moduleData[module].type)
-        continue;
-      if (cell->modelId[module] != foundId) continue;
-
-      // Skip if it's already the current model
-      if (cell == modelslist.getCurrentModel()) {
-        // Current model's module config works
-        moduleState[module].counter = CRSF_FRAME_MODELID;
-        g_model.header.modelId[module] = origId;
-        return true;
-      }
-
-      // Switch to the matching model.
-      // loadModel() internally stops pulses (preModelLoad) and
-      // restarts them (postModelLoad -> pulsesStart) so the mixer
-      // is running after this call.
-      storageFlushCurrentModel();
-      storageCheck(true);
-      strncpy(g_eeGeneral.currModelFilename, cell->modelFilename,
-              LEN_MODEL_FILENAME);
-      g_eeGeneral.currModelFilename[LEN_MODEL_FILENAME] = '\0';
-      modelslist.setCurrentModel(cell);
-
-      // SAFETY: turn on the backlight and use alarms=true so that
-      // checkAll() runs throttle / switch / failsafe warnings.
-      requiredBacklightBright = g_eeGeneral.getBrightness();
-      currentBacklightBright = requiredBacklightBright;
-      BACKLIGHT_ENABLE();
-
-      const char* err = loadModel(g_eeGeneral.currModelFilename, true);
-      if (err) {
-        TRACE("tryProbeModelIds: loadModel error=%s", err);
-      }
-
-      storageDirty(EE_GENERAL);
-      return true;
-    }
-
-    // Found a modelId but no matching model in list -> restore
-    moduleState[module].counter = CRSF_FRAME_MODELID;
-    g_model.header.modelId[module] = origId;
-    return true;  // telemetry is still streaming
-  }
-
-  return false;
-}
-#else
-static bool tryProbeModelIds()
-{
-  return false;
-}
-#endif
-
-// Periodically probe model IDs during normal (non-standby) operation.
-// Called from the main loop every ~50ms; rate-limited internally to
-// one probe attempt every 30 seconds.
-//
-// Conditions:
-//   - No telemetry streaming (no receiver connected)
-//   - At least 30s since the last probe
-//   - Not in the first 5s after boot
-static void tryAutoSwitchModel()
-{
-#if defined(CROSSFIRE) && defined(STORAGE_MODELSLIST)
-  // Don't probe while a receiver is connected
-  if (TELEMETRY_STREAMING()) return;
-
-  tmr10ms_t now = get_tmr10ms();
-
-  // Wait for things to settle after boot (5 seconds)
-  if (now < 500) return;
-
-  // Rate-limit: probe at most once every 10 seconds.
-  // During a probe we briefly change modelId (300ms per model); the
-  // user does not notice this when no receiver is connected.
-  static tmr10ms_t lastProbe = 0;
-  if ((now - lastProbe) < 1000) return;  // 1000 * 10ms = 10s
-  lastProbe = now;
-
-  tryProbeModelIds();
-#endif
-}
 
 static void menusTask()
 {
@@ -251,10 +102,6 @@ static void menusTask()
       WDG_RESET();  // Feed watchdog (mixer stopped, cannot feed itself)
 
       // Every 10 seconds: restart mixer and sniff for receiver.
-      // Keep the mixer running for up to 2 seconds so the RF protocol
-      // has time to re-establish the link (frequency-hopping sync,
-      // receiver boot, protocol handshake, etc.).
-      // Check telemetry every 50ms and break out as soon as we detect it.
       tmr10ms_t now = get_tmr10ms();
       if ((now - last_standby_poll) > 1000) {  // 1000 * 10ms = 10s
         last_standby_poll = now;
@@ -262,27 +109,6 @@ static void menusTask()
 
         // Sniff loop: up to 40 × 50ms = 2000ms
         for (int i = 0; i < 40; i++) {
-          telemetryWakeup();
-          if (TELEMETRY_STREAMING()) break;
-          sleep_ms(50);
-        }
-
-        // Phase 2: Probe model IDs from the model list.
-        // ALWAYS runs — even when telemetry is already flowing.
-        //
-        // With ELRS Model Match:
-        //   - Wrong modelId → no telemetry → probe finds the right one
-        //   - Right modelId → telemetry flowing → probe finds no better
-        //     match, restores original modelId, returns false → but
-        //     telemetry resumes after restore → wake up below.
-        // Without Model Match:
-        //   - Telemetry keeps flowing for any modelId → probe can't
-        //     identify receiver → returns false → wake up on current.
-        tryProbeModelIds();
-
-        // After probing, the original modelId may have been restored
-        // and the receiver needs a moment to reconnect.
-        for (int i = 0; i < 10; i++) {
           telemetryWakeup();
           if (TELEMETRY_STREAMING()) break;
           sleep_ms(50);
@@ -302,8 +128,6 @@ static void menusTask()
       }
 
       // 2. Stick / switch / IMU movement → wake up
-      //    ADC(DMA) keeps sampling, IMU is polled by mixer task even
-      //    when _mixer_running=false, switch GPIO works independently.
       if (inactivityCheckInputs()) {
         mixerTaskStart();
         standby_prepared = false;
@@ -324,12 +148,6 @@ static void menusTask()
   while (pwrCheck() != e_power_off) {
 #endif
     time_point_t next_tick = time_point_now();
-
-    // Auto-switch model when a receiver powers on during normal
-    // (non-standby) operation.  Only fires when no receiver is
-    // connected; rate-limited to once every 30 seconds.
-    tryAutoSwitchModel();
-
     DEBUG_TIMER_START(debugTimerPerMain);
 #if defined(COLORLCD) && defined(CLI)
     if (perMainEnabled) {

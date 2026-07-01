@@ -48,40 +48,10 @@ state and can automatically wake when a receiver powers on.
 - Sniff interval: **10 seconds** (was 2s) — better battery life
 - Sniff window: **2 seconds** (was 50ms) — reliable detection of slow-start receivers
 
-#### 2d33ee7+ — Auto-detect receiver and switch model (current feature set)
-The radio now automatically detects which receiver is powered on and switches to
-the matching model. Works in **both standby and normal operation**:
-
-**Trigger conditions** (must ALL be true):
-- No receiver currently connected (`TELEMETRY_STREAMING()` is false)
-- At least 5 seconds since boot
-- At least **10 seconds** since the last probe attempt
-
-**How it works:**
-
-1. **Periodic model ID probing** — While no receiver is connected, the radio
-   periodically (every 30s) tries each unique `modelId` (RX num) from the model
-   list via CRSF `COMMAND_MODEL_SELECT_ID`. This is needed because ELRS Model
-   Match prevents a receiver from connecting unless the TX sends the correct ID.
-
-2. **Auto-switches to the matching model** — When a probe finds a working
-   modelId, the radio loads that model's full configuration (mixes, rates,
-   telemetry sensors, etc.).
-
-3. **Full safety checks** — Before the new model activates, the radio runs the
-   standard throttle warning, switch check, and failsafe check (`checkAll()`).
-   The backlight is turned on so the user can see these warnings. This is the
-   **same safety mechanism** used when manually switching models — it respects
-   each model's individual settings (e.g. if throttle warning is disabled in
-   the model, it won't show).
-
-4. **Already-connected guard** — If a receiver IS connected, probing is skipped
-   entirely. The radio never switches models mid-flight.
-
 ### Usage
 
 - **Automatic**: Nothing to configure. The radio enters standby after the
-  configured inactivity time, and wakes automatically when a receiver powers on.
+  configured inactivity timeout, and wakes automatically when a receiver powers on.
 - **Manual wake**: Press the power button, move a stick, flip a switch, or
   move the radio (IMU).
 
