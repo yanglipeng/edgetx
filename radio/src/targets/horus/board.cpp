@@ -323,10 +323,6 @@ void boardEnterStandby()
 
   backlightEnable(0);
 
-#if defined(LED_STRIP_GPIO)
-  rgbLedClearAll();
-#endif
-
   // Enter SLEEP mode (not STOP) via WFI.
   // SysTick stays enabled — FreeRTOS timers (telemetry 2ms, services 10ms)
   // keep firing and the mixer task keeps running, so the RF module
