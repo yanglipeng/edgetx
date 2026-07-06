@@ -54,10 +54,6 @@
 
 #include "lua/lua_states.h"
 #include "pdm_wav_recorder.h"
-#if defined(USE_VS1053B)
-#include "vs1053b_recorder.h"
-#include "targets/common/arm/stm32/vs1053b.h"
-#endif
 
 #define CLI_COMMAND_MAX_ARGS           8
 #define CLI_COMMAND_MAX_LEN            256
@@ -330,65 +326,6 @@ int cliRecord(const char ** argv)
   return 0;
 }
 #endif // PDM_CLOCK
-
-#if defined(USE_VS1053B)
-int cliRecord(const char ** argv)
-{
-  if (!argv[1] || !argv[1][0]) {
-    cliSerialPrint("%s: missing filename", argv[0]);
-    return 0;
-  }
-
-  int seconds = 5;
-  if (argv[2] && argv[2][0]) {
-    if (toInt(argv, 2, &seconds) == 0 || seconds <= 0 || seconds > 600) {
-      cliSerialPrint("%s: Invalid duration \"%s\"", argv[0], argv[2]);
-      return 0;
-    }
-  }
-
-  char pathBuf[64];
-  const char* path = argv[1];
-  const size_t nameLen = strlen(argv[1]);
-  const bool hasExt =
-      nameLen >= 4 && strcasecmp(argv[1] + nameLen - 4, ".wav") == 0;
-  if (!hasExt) {
-    if (nameLen + 5 > sizeof(pathBuf)) {
-      cliSerialPrint("%s: path too long", argv[0]);
-      return 0;
-    }
-    memcpy(pathBuf, argv[1], nameLen);
-    memcpy(pathBuf + nameLen, ".wav", 5);
-    path = pathBuf;
-  }
-
-  const uint32_t totalSamples = Vs1053bRecorder::DST_RATE * (uint32_t)seconds;
-  vs1053b_start_recording(Vs1053bRecorder::DST_RATE);
-  Vs1053bRecorder rec;
-  FRESULT res = rec.start(path, (uint32_t)seconds);
-  if (res != FR_OK) {
-    vs1053b_stop_recording();
-    cliSerialPrint("%s: cannot open \"%s\" (err %u)", argv[0], path,
-                   (unsigned)res);
-    return 0;
-  }
-
-  cliSerialPrint("Recording %d s (%u samples @ %u Hz) to %s",
-                 seconds, (unsigned)totalSamples,
-                 (unsigned)Vs1053bRecorder::DST_RATE, path);
-
-  while (rec.isRecording() && rec.getSamplesWritten() < totalSamples) {
-    sleep_ms(50);
-  }
-
-  rec.stop();
-  vs1053b_stop_recording();
-  cliSerialPrint("Recorded %u samples (%u bytes)",
-                 (unsigned)rec.getSamplesWritten(),
-                 (unsigned)rec.getBytesWritten());
-  return 0;
-}
-#endif // USE_VS1053B
 
 int cliLs(const char ** argv)
 {
@@ -1915,7 +1852,7 @@ const CliCommand cliCommands[] = {
   { "readsd", cliReadSD, "<start sector> <sectors count> <read buffer size (sectors)>" },
   { "testsd", cliTestSD, "" },
   { "play", cliPlay, "<filename>" },
-#if defined(PDM_CLOCK) || defined(USE_VS1053B)
+#if defined(PDM_CLOCK)
   { "rec", cliRecord, "<filename> [<seconds>]" },
 #endif
   { "reboot", cliReboot, "[wdt]" },

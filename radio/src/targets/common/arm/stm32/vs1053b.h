@@ -38,9 +38,3 @@ typedef struct {
 } vs1053b_t;
 
 void vs1053b_init(const vs1053b_t* dev);
-
-// Recording (encoding mode) API
-void vs1053b_start_recording(uint16_t sample_rate);
-bool vs1053b_is_recording();
-uint32_t vs1053b_read_recording_data(int16_t* buffer, uint32_t max_samples);
-void vs1053b_stop_recording();

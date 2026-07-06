@@ -30,9 +30,6 @@
 #include "hal/watchdog_driver.h"
 #include "inactivity_timer.h"
 #include "pdm_wav_recorder.h"
-#if defined(USE_VS1053B)
-#include "vs1053b_recorder.h"
-#endif
 
 #include "tasks.h"
 #include "tasks/mixer_task.h"
@@ -194,9 +191,10 @@ static void audioTask()
     DEBUG_TIMER_START(debugTimerAudioDuration);
     audioQueue.wakeup();
 #if defined(PDM_CLOCK)
+    // Drive microphone recording (if any) at the audio-task cadence.
+    // Much shorter than the UI tick interval, so the PDM ring buffer
+    // never fills enough to trigger skip-ahead / sample drops.
     PdmWavRecorder::audioTick();
-#elif defined(USE_VS1053B)
-    Vs1053bRecorder::audioTick();
 #endif
     DEBUG_TIMER_STOP(debugTimerAudioDuration);
     sleep_until(&next_tick, 4);

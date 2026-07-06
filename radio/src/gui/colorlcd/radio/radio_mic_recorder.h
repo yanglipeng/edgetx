@@ -1,15 +1,31 @@
+/*
+* Copyright (C) EdgeTX
+ *
+ * Based on code named
+ *   opentx - https://github.com/opentx/opentx
+ *   th9x - http://code.google.com/p/th9x
+ *   er9x - http://code.google.com/p/er9x
+ *   gruvin9x - http://code.google.com/p/gruvin9x
+ *
+ * License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #pragma once
 
 #include "page.h"
+#include "pdm_wav_recorder.h"
 #include "sdcard.h"
 
 #if defined(PDM_CLOCK)
-  #include "pdm_wav_recorder.h"
-#elif defined(USE_VS1053B)
-  #include "vs1053b_recorder.h"
-#endif
-
-#if defined(PDM_CLOCK) || defined(USE_VS1053B)
 
 class TextButton;
 class StaticText;
@@ -24,18 +40,13 @@ class RadioMicRecorder : public Page
   enum class State : uint8_t { IDLE, COUNTDOWN, RECORDING };
 
   static constexpr uint32_t COUNTDOWN_SECONDS = 5;
-  static constexpr int PATH_MAX_LEN = sizeof(SOUNDS_PATH) + 14;
+  static constexpr int PATH_MAX_LEN = sizeof(SOUNDS_PATH) + 14; // "/lang/rec_00.wav\0"
 
   State state = State::IDLE;
   tmr10ms_t stateStart = 0;
   char filename[PATH_MAX_LEN] = {0};
   char pendingRename[PATH_MAX_LEN] = {0};
-
-#if defined(PDM_CLOCK)
   PdmWavRecorder recorder;
-#elif defined(USE_VS1053B)
-  Vs1053bRecorder recorder;
-#endif
 
   StaticText* bigLabel = nullptr;
   StaticText* infoLabel = nullptr;
@@ -56,7 +67,9 @@ class RadioMicRecorder : public Page
   void refreshUI();
   void pickNextFilename();
 
+  // Stable callback address so the dtor can cancel a pending lv_async call
+  // scheduled from the LabelDialog confirm path.
   static void asyncProcessPendingRename(void* ctx);
 };
 
-#endif
+#endif  // PDM_CLOCK
