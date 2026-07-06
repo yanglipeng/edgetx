@@ -353,8 +353,86 @@ static void audioSetCurrentBuffer(const AudioBuffer * buffer)
 
 static const uint8_t nullBytes[32] = {0};
 
+// Recording (encoding mode) support
+static bool _is_recording = false;
+
+void vs1053b_start_recording(uint16_t sample_rate)
+{
+  if (!_instance || _is_recording) return;
+
+  _audio_buffer = nullptr;
+  _audio_buffer_len = 0;
+  _set_mute_pin(true);
+
+  _is_recording = true;
+
+  // Set mic/line input path, 16-bit PCM mono output
+  vs1053b_write_cmd(SPI_AUDATA, (sample_rate << 1) | 1);
+  vs1053b_write_cmd(SPI_AICTRL0, 128);
+  vs1053b_write_cmd(SPI_AICTRL1, 128);
+  vs1053b_write_cmd(SPI_MODE, SM_LINE1 | SM_SDINEW);
+
+  _wait_ms(50);
+}
+
+bool vs1053b_is_recording()
+{
+  return _is_recording;
+}
+
+uint32_t vs1053b_read_recording_data(int16_t* buffer, uint32_t max_samples)
+{
+  if (!_is_recording || !buffer || max_samples == 0) return 0;
+  if (!READ_DREQ()) return 0;
+
+  uint32_t total = 0;
+  while (READ_DREQ() && total < max_samples) {
+    uint32_t batch = (max_samples - total) > 16 ? 16 : (max_samples - total);
+    uint32_t bytes = batch * 2;
+
+    uint8_t tmp[32];
+    uint8_t dummy[32] = {0};
+
+    XDCS_LOW();
+    stm32_spi_transfer_bytes(_instance->spi, dummy, tmp, bytes);
+    XDCS_HIGH();
+
+    for (uint32_t i = 0; i < batch; i++) {
+      buffer[total + i] = (int16_t)((uint16_t)tmp[i * 2] |
+                                    ((uint16_t)tmp[i * 2 + 1] << 8));
+    }
+    total += batch;
+  }
+
+  return total;
+}
+
+void vs1053b_stop_recording()
+{
+  if (!_instance || !_is_recording) return;
+
+  _is_recording = false;
+
+  vs1053b_write_cmd(SPI_MODE, SM_SDINEW);
+
+  vs1053b_hard_reset();
+  vs1053b_write_cmd(SPI_MODE, SM_SDINEW);
+  vs1053b_write_cmd(SPI_CLOCKF, 0x9800);
+  vs1053b_wait_dreq(5000);
+  stm32_spi_set_max_baudrate(_instance->spi, SPI_HIGH_SPEED);
+  vs1053b_send_riff_header();
+
+  _async_volume = DEFAULT_VOLUME;
+  vs1053b_update_volume();
+}
+
+// Guard: don't touch the VS1053B data interface during recording
+// (audioConsumeCurrentBuffer writes to SDI, which would corrupt
+//  the encoding data flow).
 void audioConsumeCurrentBuffer()
 {
+  if (_is_recording) return;
+
   vs1053b_update_volume();
 
   if (!_audio_buffer) {

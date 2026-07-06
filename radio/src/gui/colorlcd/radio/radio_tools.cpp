@@ -212,7 +212,7 @@ static void run_ghost_config(const std::string&)
 }
 #endif
 
-#if defined(PDM_CLOCK)
+#if defined(PDM_CLOCK) || defined(USE_VS1053B)
 static void run_mic_recorder(const std::string&)
 {
   new RadioMicRecorder();
@@ -357,7 +357,7 @@ void RadioToolsPage::rebuild(Window* window)
   }
 #endif
 
-#if defined(PDM_CLOCK)
+#if defined(PDM_CLOCK) || defined(USE_VS1053B)
   tools.emplace_back(ToolEntry{STR_MIC_RECORDER, "", run_mic_recorder});
 #endif
 

@@ -1,30 +1,8 @@
-/*
-* Copyright (C) EdgeTX
- *
- * Based on code named
- *   opentx - https://github.com/opentx/opentx
- *   th9x - http://code.google.com/p/th9x
- *   er9x - http://code.google.com/p/er9x
- *   gruvin9x - http://code.google.com/p/gruvin9x
- *
- * License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
-
 #include "radio_mic_recorder.h"
 
-#if defined(PDM_CLOCK)
+#if defined(PDM_CLOCK) || defined(USE_VS1053B)
 
 #include <stdio.h>
-
 #include "button.h"
 #include "dialog.h"
 #include "edgetx.h"
@@ -32,6 +10,9 @@
 #include "sdcard.h"
 #include "static.h"
 #include "timers_driver.h"
+#if defined(USE_VS1053B)
+#include "targets/common/arm/stm32/vs1053b.h"
+#endif
 
 static constexpr coord_t MIC_BTN_W = 260;
 static constexpr coord_t MIC_BTN_H = EdgeTxStyles::UI_ELEMENT_HEIGHT * 2 + PAD_LARGE;
@@ -39,9 +20,9 @@ static constexpr coord_t MIC_BTN_H = EdgeTxStyles::UI_ELEMENT_HEIGHT * 2 + PAD_L
 RadioMicRecorder::RadioMicRecorder() :
     Page(ICON_RADIO_TOOLS)
 {
-  // Bring the PDM hardware up only while this tool is open. Capture is off
-  // outside of this scope so the mic clock and DMA stream are idle.
+#if defined(PDM_CLOCK)
   pdmStart();
+#endif
   buildHeader(header);
   buildBody(body);
   enterIdle();
@@ -49,13 +30,13 @@ RadioMicRecorder::RadioMicRecorder() :
 
 RadioMicRecorder::~RadioMicRecorder()
 {
-  // An async call scheduled from the LabelDialog confirm path may still be
-  // pending when the page is closed (e.g. user long-presses EXIT while the
-  // dialog is being dismissed). Cancelling ensures the callback never fires
-  // on a destroyed instance.
   lv_async_call_cancel(&RadioMicRecorder::asyncProcessPendingRename, this);
   if (recorder.isRecording()) recorder.stop();
+#if defined(PDM_CLOCK)
   pdmStop();
+#elif defined(USE_VS1053B)
+  vs1053b_stop_recording();
+#endif
 }
 
 void RadioMicRecorder::asyncProcessPendingRename(void* ctx)
@@ -72,31 +53,20 @@ void RadioMicRecorder::buildHeader(Window* window)
 void RadioMicRecorder::buildBody(Window* window)
 {
   window->padAll(PAD_ZERO);
-
   const coord_t w = window->width();
   const coord_t h = window->height();
 
-  bigLabel = new StaticText(
-      window,
-      {0, h / 3 - 20, w, 40},
+  bigLabel = new StaticText(window, {0, h / 3 - 20, w, 40},
       "", COLOR_THEME_PRIMARY1_INDEX, FONT(XL));
   lv_obj_set_style_text_align(bigLabel->getLvObj(), LV_TEXT_ALIGN_CENTER, 0);
 
-  infoLabel = new StaticText(
-      window,
-      {0, h / 3 + 30, w, 24},
+  infoLabel = new StaticText(window, {0, h / 3 + 30, w, 24},
       "", COLOR_THEME_SECONDARY1_INDEX, FONT(STD));
   lv_obj_set_style_text_align(infoLabel->getLvObj(), LV_TEXT_ALIGN_CENTER, 0);
 
-  actionButton = new TextButton(
-      window,
-      {(w - MIC_BTN_W) / 2,
-       h - MIC_BTN_H - PAD_LARGE * 2,
-       MIC_BTN_W, MIC_BTN_H},
-      "", [this]() {
-        onActionPressed();
-        return 0;
-      });
+  actionButton = new TextButton(window,
+      {(w - MIC_BTN_W) / 2, h - MIC_BTN_H - PAD_LARGE * 2, MIC_BTN_W, MIC_BTN_H},
+      "", [this]() { onActionPressed(); return 0; });
   actionButton->setFont(FONT_XL_INDEX);
 }
 
@@ -113,7 +83,7 @@ void RadioMicRecorder::onActionPressed()
 {
   switch (state) {
     case State::IDLE:      enterCountdown(); break;
-    case State::COUNTDOWN: enterIdle();      break;   // cancel
+    case State::COUNTDOWN: enterIdle();      break;
     case State::RECORDING: stopRecording();  break;
   }
 }
@@ -121,6 +91,9 @@ void RadioMicRecorder::onActionPressed()
 void RadioMicRecorder::enterIdle()
 {
   if (recorder.isRecording()) recorder.stop();
+#if defined(USE_VS1053B)
+  vs1053b_stop_recording();
+#endif
   state = State::IDLE;
   stateStart = get_tmr10ms();
   refreshUI();
@@ -136,6 +109,11 @@ void RadioMicRecorder::enterCountdown()
 void RadioMicRecorder::enterRecording()
 {
   pickNextFilename();
+#if defined(USE_VS1053B)
+  // Start VS1053B encoding right before recording — the chip must
+  // be read continuously while encoding to avoid FIFO overflow.
+  vs1053b_start_recording(Vs1053bRecorder::DST_RATE);
+#endif
   FRESULT res = recorder.start(filename, 0);
   if (res != FR_OK) {
     char msg[40];
@@ -154,14 +132,18 @@ void RadioMicRecorder::enterRecording()
 void RadioMicRecorder::stopRecording()
 {
   recorder.stop();
+#if defined(PDM_CLOCK)
   PdmWavRecorder::trimSilence(filename);
+#elif defined(USE_VS1053B)
+  vs1053b_stop_recording();
+  Vs1053bRecorder::trimSilence(filename);
+#endif
   state = State::IDLE;
   stateStart = get_tmr10ms();
   refreshUI();
 
   const char* base = strrchr(filename, '/');
   base = base ? base + 1 : filename;
-
   char baseName[PATH_MAX_LEN] = {};
   strncpy(baseName, base, sizeof(baseName) - 1);
   char* dot = strrchr(baseName, '.');
@@ -174,12 +156,6 @@ void RadioMicRecorder::stopRecording()
     strncpy(dir + SOUNDS_PATH_LNG_OFS, currentLanguagePack->id, 2);
     snprintf(pendingRename, sizeof(pendingRename), "%s%s.wav", dir, newName.c_str());
     if (strcmp(pendingRename, filename) == 0) { refreshUI(); return; }
-
-    // Defer the overwrite check until LabelDialog has finished closing —
-    // creating a modal now would leave us stacked on top of LabelDialog,
-    // which corrupts the lv_group chain when LabelDialog deletes itself.
-    // The page dtor cancels this async call if the user bails out before
-    // it fires (see ~RadioMicRecorder).
     lv_async_call(&RadioMicRecorder::asyncProcessPendingRename, this);
   });
 }
@@ -236,8 +212,8 @@ void RadioMicRecorder::refreshUI()
       snprintf(buf, sizeof(buf), "%s %02u:%02u", STR_REC,
                (unsigned)(s / 60U), (unsigned)(s % 60U));
       bigLabel->setText(buf);
-      snprintf(buf, sizeof(buf), "%s  %u KB",
-               filename, (unsigned)(recorder.getBytesWritten() / 1024U));
+      snprintf(buf, sizeof(buf), "%s  %u KB", filename,
+               (unsigned)(recorder.getBytesWritten() / 1024U));
       infoLabel->setText(buf);
       actionButton->setText(STR_STOP);
       break;
@@ -248,7 +224,6 @@ void RadioMicRecorder::refreshUI()
 void RadioMicRecorder::checkEvents()
 {
   Page::checkEvents();
-
   if (state == State::COUNTDOWN) {
     const uint32_t elapsed10 = (uint32_t)(get_tmr10ms() - stateStart);
     if (elapsed10 >= COUNTDOWN_SECONDS * 100U) {
@@ -270,7 +245,6 @@ void RadioMicRecorder::pickNextFilename()
   char dir[sizeof(SOUNDS_PATH) + 1];
   strcpy(dir, SOUNDS_PATH "/");
   strncpy(dir + SOUNDS_PATH_LNG_OFS, currentLanguagePack->id, 2);
-
   FILINFO info;
   for (int i = 0; i < 100; i++) {
     snprintf(filename, sizeof(filename), "%srec_%02d.wav", dir, i);
@@ -279,4 +253,4 @@ void RadioMicRecorder::pickNextFilename()
   snprintf(filename, sizeof(filename), "%srec.wav", dir);
 }
 
-#endif  // PDM_CLOCK
+#endif

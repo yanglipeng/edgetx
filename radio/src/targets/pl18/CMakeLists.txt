@@ -235,7 +235,10 @@ endif()
 
 if(USE_VS1053B)
   add_definitions(-DUSE_VS1053B)
-  target_sources(board PRIVATE targets/common/arm/stm32/vs1053b.cpp)
+  target_sources(board PRIVATE
+    targets/common/arm/stm32/vs1053b.cpp
+    vs1053b_recorder.cpp
+  )
 else()
   target_sources(board PRIVATE targets/common/arm/stm32/audio_dac_driver.cpp)
   add_definitions(-DSOFTWARE_VOLUME)
